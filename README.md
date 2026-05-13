@@ -53,7 +53,6 @@
 ### Phase 1: 데이터 분석 및 Flask 기반 웹 서비스 구축
 * **멀티 API 연동**: 서울시 RealtimeAir, 기상청 APIHub 등 다각도 데이터 수집
 * **성능 최적화**: `ThreadPoolExecutor`를 활용해 25개 자치구의 과거 데이터를 **병렬로 수집**, 로딩 속도 70% 이상 개선
-* **데이터 지속성**: Oracle DB의 `MERGE INTO` 문을 사용하여 효율적인 데이터 캐싱 및 이력 관리 구현
 
 ### Phase 2: 딥러닝 모델 도입 및 서비스 확장
 * **AI 실시간 관제**: YOLOv8 기반으로 영상 내 마스크 착용 여부 및 객체(Child/Adult) 분류
