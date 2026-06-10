@@ -53,26 +53,35 @@
 ### Phase 1: 데이터 분석 및 Flask 기반 웹 서비스 구축
 * **멀티 API 연동**: 서울시 RealtimeAir, 기상청 APIHub 등 다각도 데이터 수집
 * **성능 최적화**: `ThreadPoolExecutor`를 활용해 25개 자치구의 과거 데이터를 **병렬로 수집**, 로딩 속도 70% 이상 개선
+* **DB 캐싱 구조 구축**: 수집한 API 데이터와 예측 결과를 Oracle DB에 JSON 형태로 저장하고, APScheduler를 통해 서버 시작 시 1회 및 15분 주기로 자동 갱신
 
-### Phase 2: 딥러닝 모델 도입 및 서비스 확장
+### Phase 2: 머신러닝 및 딥러닝 모델 도입
+* **미세먼지 위험도 예측:**: 실시간 PM10/PM2.5, 과거 농도, 기온, 지역 산업 비율 데이터를 기반으로 RandomForest 모델을 활용해 자치구별 위험도 예측
 * **AI 실시간 관제**: YOLOv8 기반으로 영상 내 마스크 착용 여부 및 객체(Child/Adult) 분류
 * **관제 대시보드**: 실시간 마스크 착용률 통계 및 고위험 상황 경보(Alert) 시스템 연동
-* **시스템 통합**: 분석된 미세먼지 수치와 AI 관제 결과를 하나의 Flask 통합 서비스로 제공
+* **시스템 통합**: 분석된 미세먼지 수치, 예측 위험도, AI 관제 결과를 하나의 Flask 통합 서비스로 제공
 
+### Phase 3: LLM 기반 맞춤형 챗봇 기능 확장
+* **지역 기반 질의 처리**: 사용자의 질문에서 정규식을 활용해 “OO구” 형태의 지역명을 추출하고, 지역명이 없을 경우 로그인 사용자의 관심 지역을 기본값으로 사용
+* **RunPod LLM API 연동**: 지역별 PM10, 위험도, 분석 정보를 프롬프트에 삽입한 뒤 RunPod 기반 LLM API에 전달하여 자연어 답변 생성
+* **응답 품질 제어**: max_new_tokens, temperature, repetition_penalty, stop 조건을 조정하고 반복 문장 제거 로직을 적용하여 짧고 일관된 답변 제공
 ---
 
 ## 🔥 3. 기술적 난관 및 해결 (Troubleshooting)
 
 ### ✅ 대량 API 수집 시 병목 현상 해결
 - **Problem**: 25개 구의 3일치 데이터를 순차 호출 시 네트워크 대기 시간으로 인해 서비스 지연 발생.
-- **Solution**: `concurrent.futures.ThreadPoolExecutor`를 도입하여 I/O Bound 작업을 병렬화. 사용자 응답 속도를 획기적으로 개선.
+- **Solution**: concurrent.futures.ThreadPoolExecutor를 도입해 I/O Bound 작업을 병렬화하고, 25개 자치구 데이터를 동시에 수집하도록 개선.
 
 ### ✅ Oracle DB 데이터 무결성 및 효율 확보
 - **Problem**: 빈번한 API 갱신 과정에서 중복 데이터 발생 및 DB I/O 부하 우려.
-- **Solution**: 단일 쿼리로 Insert/Update가 가능한 `MERGE` 문을 작성하고, CLOB 데이터 타입 최적화를 위해 `OutputTypeHandler`를 설정하여 대용량 JSON 데이터 처리를 안정화.
+- **Solution**: Oracle MERGE 문을 활용해 Insert/Update를 단일 쿼리로 처리하고, CLOB OutputTypeHandler를 설정하여 대용량 JSON 캐시 데이터를 안정적으로 저장 및 조회.
 
 ### ✅ 실시간 AI 추론 리소스 관리
 - **Problem**: 웹 서버 내에서 딥러닝 모델 구동 시 성능 저하 및 UI 프리징 현상.
-- **Solution**: 전역 변수 기반의 캐싱 구조(`current_stats`)를 설계하여 모델의 추론 결과와 웹 UI 업데이트 로직을 분리, 안정적인 서비스 제공.
+- **Solution**: 마스크 감지 AI 서버와 Flask 웹 서버를 분리하고, Flask에서는 추론 결과 API를 주기적으로 수집해 current_stats 전역 캐시에 저장. UI는 캐시 데이터를 조회하도록 구성하여 안정성 확보.
 
+### ✅ LLM 챗봇 응답의 신뢰성과 속도 개선
+- **Problem**: 사용자 질문마다 외부 API와 LLM을 모두 직접 호출하면 응답 속도가 느려지고, 최신 데이터 기준이 불안정해질 수 있음.
+- **Solution**: APScheduler로 15분마다 갱신되는 Oracle DB 캐시를 챗봇의 데이터 소스로 사용. 사용자의 질문에서 지역명을 추출한 뒤, 해당 지역의 최신 미세먼지 분석 결과만 프롬프트에 포함하여 LLM 답변의 범위와 근거를 제한.
 ---
