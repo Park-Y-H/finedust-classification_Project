@@ -107,7 +107,28 @@
 * **응답 품질 제어**: max_new_tokens, temperature, repetition_penalty, stop 조건을 조정하고 반복 문장 제거 로직을 적용하여 짧고 일관된 답변 제공
 ---
 
-## 🔥 4. 기술적 난관 및 해결 (Troubleshooting)
+## 🛠️ 4. 핵심 구현 로직 (Key Implementation)
+
+### 4-1. Flask App Factory & Blueprint 구조
+애플리케이션을 기능별로 모듈화하여 유지보수성을 극대화했습니다. 서버 실행 시 예측 모델과 데이터를 메모리에 로드하여 응답 속도를 개선했습니다.
+
+```python
+def create_app():
+    app = Flask(__name__)
+    # AI 모델 및 분석 데이터 서버 시작 시 로드
+    app.model = joblib.load('models/rf_model.pkl')
+    app.scaler = joblib.load('models/scaler.pkl')
+    # Blueprint 단위 모듈화
+    app.register_blueprint(main_views.bp)
+    app.register_blueprint(auth_views.bp)
+    app.register_blueprint(chatbot_views.bp)
+    app.register_blueprint(mask_views.bp)
+    # 스케줄러 자동 실행
+    start_scheduler(app)
+
+    return app
+
+## 🔥 5. 기술적 난관 및 해결 (Troubleshooting)
 
 ### ✅ 대량 API 수집 시 병목 현상 해결
 - **Problem**: 25개 구의 3일치 데이터를 순차 호출 시 네트워크 대기 시간으로 인해 서비스 지연 발생.
