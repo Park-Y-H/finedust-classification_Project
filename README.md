@@ -105,6 +105,7 @@
 * **지역 기반 질의 처리**: 사용자의 질문에서 정규식을 활용해 “OO구” 형태의 지역명을 추출하고, 지역명이 없을 경우 로그인 사용자의 관심 지역을 기본값으로 사용
 * **RunPod LLM API 연동**: 지역별 PM10, 위험도, 분석 정보를 프롬프트에 삽입한 뒤 RunPod 기반 LLM API에 전달하여 자연어 답변 생성
 * **응답 품질 제어**: max_new_tokens, temperature, repetition_penalty, stop 조건을 조정하고 반복 문장 제거 로직을 적용하여 짧고 일관된 답변 제공
+
 ---
 
 ## 🛠️ 4. 핵심 구현 로직 (Key Implementation)
@@ -127,6 +128,7 @@ def create_app():
     start_scheduler(app)
 
     return app
+```
 
 ---
 
