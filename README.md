@@ -128,6 +128,8 @@ def create_app():
 
     return app
 
+---
+
 ## 🔥 5. 기술적 난관 및 해결 (Troubleshooting)
 
 ### ✅ 대량 API 수집 시 병목 현상 해결
