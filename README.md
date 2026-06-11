@@ -92,7 +92,7 @@
 
 ### Phase 1: 데이터 분석 및 Flask 기반 웹 서비스 구축
 * **멀티 API 연동**: 서울시 RealtimeAir, 기상청 APIHub 등 다각도 데이터 수집
-* **성능 최적화**: `ThreadPoolExecutor`를 활용해 25개 자치구의 과거 데이터를 **병렬로 수집**, 로딩 속도 70% 이상 개선
+* **성능 최적화**: `ThreadPoolExecutor`를 활용해 25개 자치구의 과거 데이터를 **병렬로 수집**, 로딩 속도 개선
 * **DB 캐싱 구조 구축**: 수집한 API 데이터와 예측 결과를 Oracle DB에 JSON 형태로 저장하고, APScheduler를 통해 서버 시작 시 1회 및 15분 주기로 자동 갱신
 
 ### Phase 2: 머신러닝 및 딥러닝 모델 도입
