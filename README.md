@@ -50,7 +50,7 @@
 
 ## 🏗️ 2. 주요 기능 및 고도화 과정
 
-### 2-0. 시스템 아키텍처 (System Architecture)
+### 시스템 아키텍처 (System Architecture)
 본 프로젝트는 데이터 수집(Collection), 분석(Analysis), 서비스(Interface) 계층을 논리적으로 분리하여 설계되었습니다. Flask 서버를 중심으로 각 기능을 Blueprint로 모듈화하고, 데이터 캐싱 및 병렬 처리를 통해 고가용성과 응답 속도를 최적화했습니다.
 
 ![서울시 AI-미세먼지 보건 분석 시스템 아키텍처](https://github.com/user-attachments/assets/b504cd53-8937-40b8-b9af-f34931032e09)
