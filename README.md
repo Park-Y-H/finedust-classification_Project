@@ -290,7 +290,6 @@ response = requests.post(
 
 ---
 
----
 
 ## 🔥 5. 기술적 난관 및 해결 (Troubleshooting)
 
