@@ -212,7 +212,7 @@ def start_scheduler(app):
     scheduler.start()
 ```
 
-### 4-5. AI 실시간 마스크 관제
+### 4-5. REST API 기반 AI 마스크 관제 시스템
 직접 학습한 YOLOv8 모델의 탐지 결과를 별도의 AI 서버에서 생성하고, Flask 웹 서비스와 REST API 방식으로 연동하여 실시간 관제 시스템을 구축하였습니다.
 
 ```python
