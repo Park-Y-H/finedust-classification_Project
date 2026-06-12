@@ -69,8 +69,9 @@
 | FR-006 | 조회 | 분석 페이지 | 자치구별 대기질 상세 데이터와 추세를 확인한다. | High | 완료 | - |
 | FR-007 | 조회 | 비교 페이지 | 여러 자치구의 대기질 데이터를 비교 차트로 확인한다. | Medium | 완료 | - |
 | FR-008 | 자동화 | 데이터 자동 갱신 | 정해진 주기에 따라 대기질 및 예측 결과를 자동 갱신한다. | High | 완료 | APScheduler (15분) |
-| FR-009 | 인터랙션 | 챗봇 질의응답 | 자연어 질의를 기반으로 지역별 상태 정보를 제공한다. | Medium | 완료 | LLM API |
-| FR-010 | 관제 | 마스크 착용 관제 | AI 영상 분석을 기반으로 마스크 착용률 통계를 표시한다. | Medium | 완료 | YOLO 모델 |
+| FR-009 | 관제 | 마스크 착용 관제 | AI 영상 분석을 기반으로 마스크 착용률 통계를 표시한다. | Medium | 완료 | YOLO 모델 |
+| FR-010 | 인터랙션 | 챗봇 질의응답 | 자연어 질의를 기반으로 지역별 상태 정보를 제공한다. | Medium | 완료 | LLM API |
+
 
 ### 2-2. 비기능적 요구사항 (Non-Functional Requirements)
 | 요구사항 ID | 항목 | 설명 | 기준 |
@@ -129,6 +130,165 @@ def create_app():
 
     return app
 ```
+
+### 4-2. 공공 API 데이터 수집 및 전처리
+서울시 Open API(RealtimeCityAir)와 기상청 데이터를 연동하여 구별 대기질 정보를 수집하였습니다.
+수집된 원본 JSON 데이터는 서비스 전반에서 일관되게 사용할 수 있도록 표준화된 딕셔너리 구조로 변환하였으며, 예외 처리 및 측정 시간 정보도 함께 관리하도록 설계했습니다.
+
+```python
+res = requests.get(url, timeout=5)
+data = res.json()
+
+for item in rows:
+    gu = item['MSRSTN_NM']
+
+    air_dict[gu] = {
+        'pm10': float(item.get('PM')) if item.get('PM') else None,
+        'pm25': float(item.get('FPM')) if item.get('FPM') else None,
+        'o3': float(item.get('OZON')) if item.get('OZON') else None,
+        'no2': float(item.get('NTDX')) if item.get('NTDX') else None,
+        'so2': float(item.get('SPDX')) if item.get('SPDX') else None,
+        'co': float(item.get('CBMX')) if item.get('CBMX') else None
+    }
+```
+
+### 4-3. RandomForest 기반 미세먼지 위험도 예측
+실시간 대기질 데이터와 과거 시계열 정보, 지역 산업 특성을 결합하여 RandomForest 기반 위험도 예측 모델을 구축하였습니다.
+
+```python
+input_dict = {
+    'AVG_PM10': c_pm10,
+    'PM10_LAG1': pm10_hist[2],
+    'PM10_LAG2': pm10_hist[1],
+    'PM10_LAG3': pm10_hist[0],
+
+    'AVG_PM25': c_pm25,
+    'PM25_LAG1': pm25_hist[2],
+    'PM25_LAG2': pm25_hist[1],
+    'PM25_LAG3': pm25_hist[0],
+
+    'DUST_TEMP_INTERACTION': c_pm10 * (30 - calc_temp),
+
+    'MANU_RATIO': row_data.get('MANU_RATIO', 0),
+    'TRANS_RATIO': row_data.get('TRANS_RATIO', 0),
+    'HEALTH_RATIO': row_data.get('HEALTH_RATIO', 0)
+}
+
+input_df = pd.DataFrame([input_dict])[cols]
+
+scaled_input = scaler.transform(input_df)
+
+prediction = int(
+    model.predict(scaled_input)[0]
+)
+```
+DUST_TEMP_INTERACTION = c_pm10 * (30 - calc_temp)
+미세먼지 농도와 기온 간 상호작용 특성을 추가하여 계절 및 기상 변화가 위험도에 미치는 영향을 반영했습니다.
+
+### 4-4. APScheduler 기반 데이터 자동 갱신
+실시간 대기질 데이터와 AI 예측 결과를 최신 상태로 유지하기 위해 APScheduler 기반 자동 갱신 시스템을 구축하였습니다.
+
+```python
+def start_scheduler(app):
+
+    def update_cache_with_context():
+        with app.app_context():
+            update_dashboard_cache()
+
+    update_cache_with_context()
+
+    scheduler = BackgroundScheduler()
+
+    scheduler.add_job(
+        func=update_cache_with_context,
+        trigger="interval",
+        minutes=15,
+        id="dust_update_job",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True
+    )
+
+    scheduler.start()
+```
+
+### 4-5. AI 실시간 마스크 관제
+직접 학습한 YOLOv8 모델의 탐지 결과를 별도의 AI 서버에서 생성하고, Flask 웹 서비스와 REST API 방식으로 연동하여 실시간 관제 시스템을 구축하였습니다.
+
+```python
+res = requests.get(
+    "http://localhost:5001/api/predict_mask",
+    timeout=0.5
+)
+
+data = res.json()
+
+ids = data.get("id_list", [])
+clss = data.get("cls_list", [])
+```
+YOLOv8 탐지 서버에서 객체 ID 및 분류 결과를 수신합니다.
+
+
+```python
+for cls, obj_id in zip(clss, ids):
+    if obj_id not in counted_ids:
+        counted_ids.add(obj_id)
+        current_stats["accum_total"] += 1
+        if cls in [0, 3]:
+            current_stats["accum_masked"] += 1
+        if cls in [3, 4]:
+            current_stats["accum_child_total"] += 1
+            if cls == 3:
+                current_stats["accum_child_masked"] += 1
+)
+```
+객체 ID 기반 중복 제거를 수행하여 동일 인원이 반복 집계되는 문제를 방지하였으며, 전체 착용률과 아동 착용률을 별도로 계산하도록 구현하였습니다.
+
+
+```python
+if current_stats["accum_total"] > 0:
+    current_stats["total_rate"] = int(
+        (current_stats["accum_masked"] /
+         current_stats["accum_total"]) * 100
+    )
+)
+```
+탐지 결과를 기반으로 실시간 마스크 착용률을 계산하여 관제 대시보드에 제공합니다.
+
+### 4-6. 지역 기반 AI 챗봇
+RunPod LLM API를 활용하여 사용자의 지역과 실시간 대기질 데이터를 반영한 맞춤형 질의응답 서비스를 구현하였습니다.
+
+```python
+match = re.search(r'([가-힣]+구)', user_message)
+
+target_gu = (
+    match.group(1)
+    if match
+    else session.get('user_region', '중구')
+)
+```
+사용자 질문에서 지역명을 정규식으로 추출하며, 지역명이 없는 경우 로그인 시 저장된 사용자 지역 정보를 기본값으로 사용하도록 구현했습니다.
+
+
+```python
+analysis_context = (
+    f"{target_gu}의 현재 미세먼지(PM10) 농도는 {pm10}이며, "
+    f"통합 상태는 '{risk_label}'입니다."
+)
+```
+DB에 저장된 실시간 분석 데이터를 기반으로 지역별 환경 정보를 생성합니다.
+
+
+```python
+response = requests.post(
+    RUNPOD_API_URL,
+    json=payload,
+    timeout=300
+)
+```
+생성된 컨텍스트와 사용자 질문을 결합하여 RunPod LLM API에 전달하고 자연어 답변을 생성합니다.
+
+---
 
 ---
 
