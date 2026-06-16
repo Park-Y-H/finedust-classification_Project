@@ -100,7 +100,7 @@
 대기질(`AIR_QUALITY_HOURLY`), 보건(`ASTHMA_CNT_MONTHLY`, `PATIENT_CNT_DAILY`), 사회경제(`AGE_STATS_QUARTERLY`, `GRDP_PER_CAPITA`) 등 성격이 다른 **다종의 공공데이터를 지역 코드를 기준으로 통합**하여 다차원 분석이 가능하도록 설계했습니다.
 이 구조를 통해 "특정 자치구의 미세먼지 농도와 호흡기 질환 환자 수, 그리고 해당 지역의 인구 구조 및 산업 취약성 간의 상관관계"를 단일 파이프라인으로 분석할 수 있는 기반을 마련했습니다.
 
-![서울시 AI-미세먼지 보건 분석 시스템 아키텍처](https://github.com/user-attachments/assets/e1c0292f-f10a-4e72-b174-2f0e134d4dae)
+![서울시 AI-미세먼지 보건 분석 시스템 아키텍처](https://github.com/user-attachments/assets/2cd2e70c-9506-4872-8f27-306c6176283d)
 
 
 ### Phase 1: 데이터 분석 및 Flask 기반 웹 서비스 구축
