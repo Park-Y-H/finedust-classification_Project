@@ -123,7 +123,7 @@
 
 ### 4-2. YOLOv8 기반 AI 마스크 착용 탐지
 
-![AI 마스크 탐지](images/yolo_mask_detection.png)
+![AI 마스크 탐지](https://github.com/user-attachments/assets/b200d8ca-516e-4d95-95ce-78999016b8c8)
 
 - 직접 학습한 YOLOv8 모델을 활용하여 마스크 착용 여부 탐지
 - 성인 및 아동 객체를 구분하여 맞춤형 분석 수행
@@ -133,7 +133,7 @@
 
 ### 4-3. 지역 기반 AI 챗봇 서비스
 
-![AI 챗봇](images/chatbot.png)
+![AI 챗봇](https://github.com/user-attachments/assets/c70bf76a-b605-4a5e-8293-4f242689ebdc)
 
 - 사용자의 관심 지역 정보를 기반으로 맞춤형 답변 제공
 - 실시간 미세먼지 데이터와 분석 결과를 활용한 질의응답 지원
