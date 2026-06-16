@@ -109,9 +109,41 @@
 
 ---
 
-## 🛠️ 4. 핵심 구현 로직 (Key Implementation)
+## ✨ 4. 주요 기능 (Main Features)
 
-### 4-1. Flask App Factory & Blueprint 구조
+### 4-1. 서울시 미세먼지 위험도 시각화
+
+![서울시 미세먼지 위험도](https://github.com/user-attachments/assets/fb3664ae-f598-4fae-a802-ce9619444c7f)
+
+- 공공 API를 활용하여 서울시 25개 자치구의 실시간 대기질 정보 수집
+- 머신러닝 예측 결과를 기반으로 지역별 미세먼지 위험도 제공
+- 위험 단계별 색상 구분을 통해 현재 대기질 상태를 직관적으로 확인 가능
+
+---
+
+### 4-2. YOLOv8 기반 AI 마스크 착용 탐지
+
+![AI 마스크 탐지](images/yolo_mask_detection.png)
+
+- 직접 학습한 YOLOv8 모델을 활용하여 마스크 착용 여부 탐지
+- 성인 및 아동 객체를 구분하여 맞춤형 분석 수행
+- 마스크 착용자와 미착용자를 실시간 분류
+- 
+---
+
+### 4-3. 지역 기반 AI 챗봇 서비스
+
+![AI 챗봇](images/chatbot.png)
+
+- 사용자의 관심 지역 정보를 기반으로 맞춤형 답변 제공
+- 실시간 미세먼지 데이터와 분석 결과를 활용한 질의응답 지원
+- 자연어 기반 환경·보건 정보 안내 서비스 구현
+
+---
+
+## 🛠️ 5. 핵심 구현 로직 (Key Implementation)
+
+### 5-1. Flask App Factory & Blueprint 구조
 애플리케이션을 기능별로 모듈화하여 유지보수성을 극대화했습니다. 서버 실행 시 예측 모델과 데이터를 메모리에 로드하여 응답 속도를 개선했습니다.
 
 ```python
@@ -131,7 +163,7 @@ def create_app():
     return app
 ```
 
-### 4-2. 공공 API 데이터 수집 및 전처리
+### 5-2. 공공 API 데이터 수집 및 전처리
 서울시 Open API(RealtimeCityAir)와 기상청 데이터를 연동하여 구별 대기질 정보를 수집하였습니다.
 수집된 원본 JSON 데이터는 서비스 전반에서 일관되게 사용할 수 있도록 표준화된 딕셔너리 구조로 변환하였으며, 예외 처리 및 측정 시간 정보도 함께 관리하도록 설계했습니다.
 
@@ -152,7 +184,7 @@ for item in rows:
     }
 ```
 
-### 4-3. RandomForest 기반 미세먼지 위험도 예측
+### 5-3. RandomForest 기반 미세먼지 위험도 예측
 실시간 대기질 데이터와 과거 시계열 정보, 지역 산업 특성을 결합하여 RandomForest 기반 위험도 예측 모델을 구축하였습니다.
 
 ```python
@@ -185,7 +217,7 @@ prediction = int(
 DUST_TEMP_INTERACTION = c_pm10 * (30 - calc_temp)
 미세먼지 농도와 기온 간 상호작용 특성을 추가하여 계절 및 기상 변화가 위험도에 미치는 영향을 반영했습니다.
 
-### 4-4. APScheduler 기반 데이터 자동 갱신
+### 5-4. APScheduler 기반 데이터 자동 갱신
 실시간 대기질 데이터와 AI 예측 결과를 최신 상태로 유지하기 위해 APScheduler 기반 자동 갱신 시스템을 구축하였습니다.
 
 ```python
@@ -212,7 +244,7 @@ def start_scheduler(app):
     scheduler.start()
 ```
 
-### 4-5. REST API 기반 AI 마스크 관제 시스템
+### 5-5. REST API 기반 AI 마스크 관제 시스템
 직접 학습한 YOLOv8 모델의 탐지 결과를 별도의 AI 서버에서 생성하고, Flask 웹 서비스와 REST API 방식으로 연동하여 실시간 관제 시스템을 구축하였습니다.
 
 ```python
@@ -255,7 +287,7 @@ if current_stats["accum_total"] > 0:
 ```
 탐지 결과를 기반으로 실시간 마스크 착용률을 계산하여 관제 대시보드에 제공합니다.
 
-### 4-6. 지역 기반 AI 챗봇
+### 5-6. 지역 기반 AI 챗봇
 RunPod LLM API를 활용하여 사용자의 지역과 실시간 대기질 데이터를 반영한 맞춤형 질의응답 서비스를 구현하였습니다.
 
 ```python
@@ -291,7 +323,7 @@ response = requests.post(
 ---
 
 
-## 🔥 5. 기술적 난관 및 해결 (Troubleshooting)
+## 🔥 6. 기술적 난관 및 해결 (Troubleshooting)
 
 ### ✅ 대량 API 수집 시 병목 현상 해결
 - **Problem**: 25개 구의 3일치 데이터를 순차 호출 시 네트워크 대기 시간으로 인해 서비스 지연 발생.
