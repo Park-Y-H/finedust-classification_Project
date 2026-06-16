@@ -1,6 +1,9 @@
 # 🌬️ 서울시 AI 미세먼지 보건 분석 및 관제 시스템
 > **서울시민의 호흡기 건강을 위한 통합 솔루션**
 
+* **한줄 소개**: 공공 API 시계열 데이터와 AI 모델을 결합한 서울시 자치구별 미세먼지 보건 위험도 예측 및 실시간 마스크 관제 웹 서비스
+* **개발 인원**: 1인 (개인 프로젝트)
+* **담당 역할**: 공공 데이터 파이프라인 구축, Oracle DB 모델링, RandomForest/YOLOv8 모델 연동, 정규식 및 DB 캐시 기반 AI 챗봇 파이프라인 구축, Flask 백엔드 아키텍처 설계
 
 ### 🛠️ Tech Stack
 **AI & Computer Vision**
@@ -90,6 +93,15 @@
 본 프로젝트는 데이터 수집(Collection), 분석(Analysis), 서비스(Interface) 계층을 논리적으로 분리하여 설계되었습니다. Flask 서버를 중심으로 각 기능을 Blueprint로 모듈화하고, 데이터 캐싱 및 병렬 처리를 통해 고가용성과 응답 속도를 최적화했습니다.
 
 ![서울시 AI-미세먼지 보건 분석 시스템 아키텍처](https://github.com/user-attachments/assets/b504cd53-8937-40b8-b9af-f34931032e09)
+
+---
+
+### 🗄️ 데이터베이스 모델링 (ERD)
+대기질(`AIR_QUALITY_HOURLY`), 보건(`ASTHMA_CNT_MONTHLY`, `PATIENT_CNT_DAILY`), 사회경제(`AGE_STATS_QUARTERLY`, `GRDP_PER_CAPITA`) 등 성격이 다른 **다종의 공공데이터를 지역 코드를 기준으로 통합**하여 다차원 분석이 가능하도록 설계했습니다.
+이 구조를 통해 "특정 자치구의 미세먼지 농도와 호흡기 질환 환자 수, 그리고 해당 지역의 인구 구조 및 산업 취약성 간의 상관관계"를 단일 파이프라인으로 분석할 수 있는 기반을 마련했습니다.
+
+![서울시 AI-미세먼지 보건 분석 시스템 아키텍처](https://github.com/user-attachments/assets/e1c0292f-f10a-4e72-b174-2f0e134d4dae)
+
 
 ### Phase 1: 데이터 분석 및 Flask 기반 웹 서비스 구축
 * **멀티 API 연동**: 서울시 RealtimeAir, 기상청 APIHub 등 다각도 데이터 수집
