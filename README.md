@@ -190,7 +190,7 @@
 
 ### 5-3. 지역 기반 AI 챗봇 서비스
 
-![AI 챗봇](https://github.com/user-attachments/assets/c70bf76a-b605-4a5e-8293-4f242689ebdc)
+![AI 챗봇](https://github.com/user-attachments/assets/9ce360f0-c50d-4034-b8f8-efbb52fbae04)
 
 - 사용자의 관심 지역 정보를 기반으로 맞춤형 답변 제공
 - 실시간 미세먼지 데이터와 분석 결과를 활용한 질의응답 지원
