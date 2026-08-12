@@ -1,0 +1,648 @@
+:root {
+    --danger:#ed1c24; --warning:#ff7f27; --normal:#ffc90e; --safe:#22b14c;
+    --bg:#f4f7fa; --card-bg:#ffffff;
+}
+
+/* 기본 설정 */
+/* 1. 바디 설정: 스크롤이 가능하도록 'hidden'을 확실히 제거 */
+body {
+    margin: 0;
+    font-family: 'Pretendard', -apple-system, sans-serif;
+    background: var(--bg);
+    color: #333;
+    overflow-y: auto !important; /* 스크롤 허용 */
+    height: auto !important;     /* 고정 높이 해제 */
+    font-size: 14px;
+}
+
+/* 2. 래퍼 설정: 화면에 가두지 말고 내용만큼 늘어나게 수정 */
+.wrapper {
+    padding: 20px;
+    max-width: 1600px;
+    margin: 0 auto;
+    min-height: 100vh;           /* 최소 높이만 화면 높이로 */
+    display: flex;
+    flex-direction: column;      /* 자식 요소들을 세로로 나열 */
+    box-sizing: border-box;
+}
+
+/* 3. 레이아웃 설정: 고정 높이(calc)를 지우는 게 핵심 */
+.layout {
+    display: flex;
+    gap: 15px;
+    flex: 1;                     /* 남는 공간을 꽉 채우면서 푸터를 아래로 밀어냄 */
+    min-height: 750px;           /* 지도가 너무 작아지지 않게 최소 높이 확보 */
+    margin-bottom: 20px;         /* 푸터와의 간격 */
+}
+
+/* 헤더 레이아웃 (왼쪽 로고 유지) */
+header {
+    background:#fff; padding:0 25px; height: 60px; border-radius:14px;
+    display:flex; justify-content:space-between; align-items: center;
+    margin-bottom:15px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    position: relative; /* 자식 요소 position 기준 */
+}
+
+header:hover {
+    border-radius: 14px 14px 0 0; /* 위쪽만 둥글게, 아래쪽(왼쪽/오른쪽)은 0 */
+    background: #fff !important;
+}
+
+.logo-area { display: flex; align-items: center; gap: 10px; font-weight: 900; font-size: 1.1rem; cursor: pointer; }
+.logo-circle { width: 10px; height: 10px; background: var(--danger); border-radius: 50%; }
+/* [1] 좌측 하단 로그인 박스 전용 (디자인 완벽 복구) */
+#login-view .login-footer {
+    display: flex !important;
+    justify-content: center !important;
+    gap: 12px !important;
+    margin-top: 12px !important;
+    font-size: 0.75rem !important;
+    color: #888 !important;
+    font-weight: 600 !important;
+}
+#login-view .login-footer a {
+    all: unset !important; /* 초기화 */
+    color: inherit !important;
+    text-decoration: none !important;
+    cursor: pointer !important;
+}
+
+/* [2] 우측 상단 토글 메뉴 전용 (삼성 스타일 고정) */
+/* [공통] 회원지원 서비스 드롭다운 스타일 */
+.header-toggle-area {
+    position: relative;
+    display: inline-block;
+}
+
+/* 버튼 디자인 */
+.header-toggle-area .toggle-btn {
+    appearance: none;
+    background: #fff !important;
+    border: 1px solid #ddd !important;
+    padding: 10px 22px !important; /* 약간 더 여유 있게 */
+    border-radius: 25px !important;
+    font-weight: 800 !important;
+    font-size: 14px !important;
+    cursor: pointer !important;
+    color: #333 !important;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+
+.header-toggle-area .toggle-btn:hover {
+    background: #f9f9f9 !important;
+    border-color: #bbb !important;
+}
+
+/* 드롭다운 메뉴 박스 */
+.header-toggle-area .toggle-content {
+    display: none;
+    flex-direction: column !important;
+    position: absolute !important;
+    top: 52px;
+    right: 0;
+    width: 200px !important;
+    background: #fff !important;
+    border: 1px solid #eee !important;
+    border-radius: 16px !important;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.15) !important;
+    z-index: 9999 !important;
+    padding: 10px 0 !important;
+    overflow: hidden;
+}
+
+/* 메뉴 활성화 상태 */
+.header-toggle-area .toggle-content.show {
+    display: flex !important;
+}
+
+/* 메뉴 내부 링크 */
+.header-toggle-area .toggle-content a {
+    all: unset !important;
+    display: block !important;
+    padding: 16px 0 !important;
+    text-align: center !important;
+    color: #333 !important;
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    cursor: pointer !important;
+    transition: background 0.2s;
+}
+
+.header-toggle-area .toggle-content a:hover {
+    background: #f5f5f5 !important;
+    color: var(--danger) !important; /* 마우스 올리면 강조색 */
+}
+
+/* 메뉴 사이 구분선 */
+.header-toggle-area .menu-divider {
+    border: none !important;
+    border-top: 1px solid #f2f2f2 !important;
+    margin: 0 15px !important;
+}
+
+.card { background:var(--card-bg); border-radius:16px; padding:18px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+.info-chip { background: rgba(255,255,255,0.9); padding: 8px 15px; border-radius: 10px; font-weight: 800; font-size: 0.82rem; display: flex; align-items: center; gap: 6px; border: 1px solid rgba(0,0,0,0.05); }
+
+/* 푸터 기본 설정 */
+.site-footer {
+    background-color: #1a1c1e;
+    color: #fff;
+    padding: 30px 0 25px;
+    width: 100%;
+}
+
+.footer-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 25px;
+}
+
+/* 상단 메뉴 영역 - 중앙 정렬로 변경 */
+.footer-top {
+    border-bottom: 1px solid #2a2c2e;
+    padding-bottom: 20px;
+    margin-bottom: 20px;
+}
+
+.footer-top .footer-inner {
+    display: flex;
+    justify-content: center; /* 왼쪽 정렬에서 가운데 정렬로 변경 */
+    gap: 80px;               /* 컬럼 사이 간격을 적절히 조정 */
+    text-align: center;      /* 메뉴 텍스트들도 중앙 정렬 */
+}
+
+.footer-column {
+    min-width: 150px;        /* 중앙 정렬 시 균형을 위해 최소 폭 설정 */
+}
+
+.footer-column h4 {
+    font-size: 0.85rem;
+    font-weight: 800;
+    margin-bottom: 12px;
+    color: #eee;
+}
+
+.footer-column ul { list-style: none; padding: 0; margin: 0; }
+.footer-column ul li { margin-bottom: 6px; }
+.footer-column ul li a {
+    color: #777;
+    text-decoration: none;
+    font-size: 0.8rem;
+    transition: 0.2s;
+}
+.footer-column ul li a:hover { color: #fff; }
+
+/* 하단 정보 영역 - 중앙 정렬 */
+.footer-bottom {
+    text-align: center;
+}
+
+.footer-logo-text {
+    font-size: 0.95rem;
+    font-weight: 900;
+    margin-bottom: 8px;
+    color: #ddd;
+}
+
+.legal-links { margin-bottom: 8px; font-size: 0.75rem; }
+.address {
+    font-size: 0.75rem;
+    color: #555;
+    line-height: 1.5;
+    margin: 0;
+}
+
+/* Top 버튼 (우측 고정 유지) */
+#btn-back-to-top {
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    width: 40px;
+    height: 40px;
+    background: #333;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    z-index: 1000;
+    transition: 0.3s;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+#btn-back-to-top:hover {
+    background: #ed1c24;
+    transform: translateY(-3px);
+}
+/* --- 네비게이션 & 메가메뉴 최종 위치 교정 --- */
+.nav-area {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    /* nav-area 자체는 유지 */
+}
+
+.main-menu {
+    display: flex;
+    list-style: none;
+    gap: 100px; /* 대주제 사이 간격 */
+    margin: 0;
+    padding: 0;
+}
+
+.menu-item {
+    width: 150px; /* 대주제 글자 영역 너비 */
+    text-align: center;
+}
+
+.menu-link {
+    text-decoration: none;
+    color: #333;
+    font-size: 1.1rem;
+    font-weight: 800;
+    transition: 0.2s;
+    white-space: nowrap;
+}
+
+/* 메가 메뉴 전체 배경판 (가로 꽉 차게) */
+.mega-menu-wrapper {
+    position: absolute;
+    top: 60px; /* 헤더 높이에 밀착 */
+    left: 0;
+    width: 100%; /* 헤더 전체 너비만큼 차지 */
+    background: #fff;
+    box-shadow: 0 15px 30px rgba(0,0,0,0.08);
+    border-top: 1px solid #f4f4f4;
+    height: 0;
+    overflow: hidden;
+    transition: all 0.3s ease-in-out;
+    display: flex;
+    justify-content: flex-end; /* 오른쪽 nav-area 위치로 밀기 위함 */
+    visibility: hidden;
+    z-index: 9999 !important;
+}
+
+header:hover .mega-menu-wrapper {
+    height: 200px;
+    visibility: visible;
+}
+
+/* [핵심] 하단 메뉴 리스트 정렬 */
+.mega-content {
+    display: flex;
+    justify-content: flex-start;
+    gap: 100px;         /* 상단 main-menu의 gap과 동일하게 */
+    padding: 35px 0;
+    /* header의 padding(25px) + 로고 너비(약 300px)를 고려하여 nav-area의 시작점과 맞춤 */
+    /* 현재 헤더 구조상 오른쪽 정렬되어 있으므로 margin-right를 조절하는 게 더 정확합니다. */
+    margin-right: 25px;
+    box-sizing: border-box;
+}
+
+.mega-column {
+    width: 150px;       /* .menu-item 너비와 반드시 일치 */
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    align-items: center; /* 글자 중앙 정렬 */
+}
+
+.mega-column a {
+    text-decoration: none;
+    color: #666;
+    font-size: 0.95rem;
+    font-weight: 700;
+    transition: 0.2s;
+    width: 100%;
+    text-align: center;
+}
+
+.mega-column a:hover {
+    color: var(--danger);
+    background: #fff5f5;
+    border-radius: 8px;
+}
+
+.mega-banner {
+    position: absolute;
+
+    /* 2. 사진을 왼쪽 끝에서 얼마나 띄울지 결정합니다. */
+    left: -200px;
+    width: 550px;           /* 배너 너비 */
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #eee;
+}
+
+.mega-banner img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;      /* 비율 깨짐 방지 */
+}
+
+/* 이미지 위 어두운 그라데이션 (글자 가독성) */
+.mega-banner::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);
+    z-index: 1;
+}
+
+.banner-text {
+    position: absolute;
+    bottom: 25px;
+    left: 25px;
+    z-index: 2;
+    color: #fff;
+    text-align: left;       /* 배너 글씨는 왼쪽 정렬이 예쁩니다 */
+}
+
+.banner-text h3 {
+    font-size: 1.4rem;
+    margin: 0 0 8px 0;
+    font-weight: 800;
+}
+
+.banner-text p {
+    font-size: 0.85rem;
+    margin: 0;
+    opacity: 0.9;
+    line-height: 1.4;
+}
+
+@media (max-width: 1200px) {
+    .wrapper { padding: 10px; }
+    .layout { gap: 10px; min-height: auto; }
+
+    .left { width: 250px; }
+    .right { width: 280px; }
+
+    /* 헤더 메뉴 간격 조절 */
+    .main-menu { gap: 40px; }
+    .menu-item { width: 110px; }
+    .mega-content { gap: 40px; }
+    .mega-column { width: 110px; }
+    .mega-banner { display: none; } /* 공간 확보 */
+}
+
+/* 2. 소형 태블릿 & 모바일 가로 (1024px 이하) */
+@media (max-width: 1024px) {
+    .layout {
+        flex-direction: column; /* [중요] 세로 정렬 */
+        padding-bottom: 50px;
+    }
+
+    .left, .right, .center {
+        width: 100% !important; /* 가로 꽉 차게 */
+    }
+
+    .center {
+        order: -1; /* [중요] 지도를 화면 최상단으로 */
+    }
+
+    .map-box {
+        min-height: 400px !important;
+        height: 50vh !important; /* [추가] 화면 높이의 절반을 차지하게 유연화 */
+    }
+
+    /* 사이드바 내부 버튼들을 3열 그리드로 정렬 */
+    .btn-group {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 8px;
+    }
+    .btn {
+        width: 100% !important;
+        text-align: center;
+        padding: 10px 5px !important;
+        font-size: 0.8rem !important;
+    }
+
+    /* 헤더 내비게이션: 모바일에서 겹치지 않게 가로 스크롤 허용 */
+    .nav-area {
+        overflow-x: auto;
+        justify-content: flex-start;
+        padding-bottom: 5px;
+    }
+    .main-menu { gap: 25px; }
+    .mega-menu-wrapper { display: none; } /* 모바일 터치 간섭 방지 */
+}
+
+/* 3. 스마트폰 일반 (768px 이하) */
+@media (max-width: 768px) {
+    header {
+        padding: 0 15px;
+        height: 55px;
+    }
+    .logo-area { font-size: 0.95rem; }
+
+    /* 지도 위 정보 칩 줄바꿈 허용 */
+    .map-overlay-info {
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+        top: 10px;
+        left: 10px;
+    }
+    .info-chip {
+        padding: 5px 10px;
+        font-size: 0.7rem;
+    }
+
+    /* 카드 여백 축소 */
+    .card { padding: 15px; }
+
+    /* 푸터 중앙 정렬 및 세로 나열 */
+    .footer-top .footer-inner {
+        flex-direction: column;
+        gap: 30px;
+        align-items: center;
+    }
+
+    /* 모바일에서는 버튼을 2열로 변경 */
+    .btn-group {
+        grid-template-columns: 1fr 1fr !important;
+    }
+}
+
+/* 4. 초소형 기기 (480px 이하) */
+@media (max-width: 480px) {
+    /* 버튼을 다시 한 줄에 하나씩 크게 */
+    .btn-group {
+        grid-template-columns: 1fr !important;
+    }
+
+    #sel-name { font-size: 1.4rem; }
+    #sel-status { font-size: 1.1rem; }
+
+    .analysis-val { font-size: 0.85rem; }
+
+    /* 지도 높이를 조금 더 확보 */
+    .map-box {
+        height: 60vh !important;
+    }
+}
+
+/* ============================================================
+   상세 분석 페이지 (analysis-container) 반응형 보정
+   ============================================================ */
+
+@media screen and (max-width: 1024px) {
+    /* 1. 전체 컨테이너 여백 조정 */
+    .analysis-container {
+        padding: 20px 15px 60px !important;
+    }
+
+    /* 2. 상단 타이틀과 셀렉트 박스 세로 정렬 */
+    .page-title-area {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+
+    #gu-select {
+        width: 100%; /* 구 선택창 가로 꽉 차게 */
+        box-sizing: border-box;
+    }
+
+    /* 3. 좌측 AI카드와 우측 섹션을 세로로 나열 */
+    .analysis-top-row {
+        flex-direction: column !important;
+    }
+
+    /* 4. AI 요약 카드 너비 고정 해제 */
+    .ai-summary-card {
+        flex: none !important;
+        width: 100% !important;
+        box-sizing: border-box;
+        padding: 25px !important;
+    }
+
+    .ai-summary-card h2 {
+        font-size: 2rem !important;
+    }
+
+    /* 5. 우측 데이터 섹션 */
+    .metrics-section {
+        width: 100% !important;
+    }
+
+    /* 6. 피처 그리드 (제조업/교통 등) 모바일 대응 */
+    .feature-grid {
+        grid-template-columns: 1fr !important; /* 모바일에선 한 줄에 하나씩 */
+        gap: 10px;
+    }
+
+    /* 7. 메인 데이터 레이아웃 (미세먼지 수치 + 차트) */
+    .main-data-layout {
+        grid-template-columns: 1fr !important; /* 무조건 한 줄 */
+    }
+
+    .metrics-grid {
+        grid-template-columns: 1fr 1fr !important; /* 미세먼지 수치는 2열 유지 */
+    }
+
+    /* 8. 차트 카드 가로 정렬 보정 */
+    .side-charts {
+        flex-direction: column !important;
+        gap: 15px;
+    }
+
+    .chart-card {
+        width: 100% !important;
+        height: 250px !important; /* 모바일에서 차트가 너무 작지 않게 높이 상향 */
+    }
+}
+
+@media screen and (max-width: 480px) {
+    /* 초소형 기기에서 미세먼지 수치도 한 줄에 하나씩 */
+    .metrics-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .metric-item.highlight .value {
+        font-size: 1.6rem !important;
+    }
+}
+
+/* ============================================================
+   데이터 비교 분석 페이지 (comp-container) 반응형 보정
+   ============================================================ */
+
+@media screen and (max-width: 1100px) {
+    /* 1. 컨테이너 여백 및 타이틀 조절 */
+    .comp-container {
+        padding: 20px 15px 60px !important;
+    }
+    .page-header h2 {
+        font-size: 1.6rem !important;
+    }
+
+    /* 2. 비교 래퍼를 세로로 (좌측지역 -> VS -> 우측지역 순) */
+    .comparison-wrapper {
+        display: flex !important;
+        flex-direction: column !important;
+        grid-template-columns: none !important;
+        gap: 15px !important;
+    }
+
+    /* 3. VS 배지 처리 */
+    .vs-badge {
+        height: 60px !important;
+        font-size: 1.8rem !important;
+        margin: 10px 0;
+        transform: rotate(0deg); /* 세로일 땐 정방향 */
+    }
+
+    /* 4. 지역 카드 너비 100% */
+    .district-card {
+        width: 100% !important;
+        padding: 20px !important;
+        box-sizing: border-box;
+    }
+
+    .select-box {
+        font-size: 1rem !important;
+        padding: 12px 20px !important;
+    }
+
+    /* 5. 차트 섹션 보정 */
+    .chart-section {
+        grid-column: span 1 !important; /* 세로 정렬 시 그리드 확장 해제 */
+        padding: 15px !important;
+    }
+
+    .chart-grid {
+        grid-template-columns: 1fr !important; /* 차트 두 개를 위아래로 */
+        height: auto !important;
+        gap: 30px;
+    }
+
+    .chart-grid canvas {
+        max-height: 200px !important; /* 모바일에서 차트가 너무 길어지지 않게 */
+    }
+
+    /* 6. AI 분석 박스 세로 나열 */
+    .ai-compare-row {
+        grid-column: span 1 !important;
+        grid-template-columns: 1fr !important;
+        gap: 10px;
+    }
+
+    .ai-box {
+        padding: 15px !important;
+        font-size: 0.85rem !important;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    /* 미세먼지 수치 격자를 1열로 (아주 작은 폰) */
+    .metric-grid {
+        grid-template-columns: 1fr !important;
+    }
+}

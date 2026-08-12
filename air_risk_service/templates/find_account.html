@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>계정 찾기 | 서울시 AI 미세먼지 보건 분석 시스템</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        :root { --danger: #ed1c24; --bg: #f4f7fa; --primary: #333; }
+        
+        .container { display: flex; justify-content: center; align-items: center; min-height: calc(100vh - 80px); padding: 20px 0; }
+        .find-card { background: #fff; padding: 40px; border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.06); width: 380px; }
+
+        input[type="radio"] { display: none; }
+
+        .tab-menu { display: flex; margin-bottom: 30px; border-bottom: 2px solid #eee; }
+        .tab-item { flex: 1; text-align: center; padding: 12px; cursor: pointer; font-size: 0.95rem; color: #999; font-weight: bold; transition: 0.3s; }
+
+        .tab-content { display: none; animation: fadeIn 0.3s ease; }
+
+        #tab1:checked ~ .tab-menu label[for="tab1"],
+        #tab2:checked ~ .tab-menu label[for="tab2"] { color: var(--primary); border-bottom: 2px solid var(--primary); margin-bottom: -2px; }
+
+        #tab1:checked ~ #content1,
+        #tab2:checked ~ #content2 { display: block; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        .form-group { margin-bottom: 15px; text-align: left; }
+        .form-label { font-size: 0.75rem; color: #888; font-weight: bold; margin-bottom: 8px; display: block; }
+        .form-input { width: 100%; padding: 12px; border: 1px solid #eee; border-radius: 10px; box-sizing: border-box; outline: none; font-size: 0.9rem; }
+
+        .email-row { display: flex; gap: 8px; }
+        .btn-verify { padding: 0 15px; background: var(--primary); color: #fff; border: none; border-radius: 10px; font-size: 0.8rem; font-weight: bold; cursor: pointer; white-space: nowrap; }
+
+        .auth-section { display: none; margin-top: 15px; padding: 15px; background: #f8f9fb; border-radius: 12px; border: 1px solid #eef0f2; }
+        .timer { font-size: 0.7rem; color: var(--danger); position: absolute; right: 10px; top: 13px; }
+
+        .action-btn { width: 100%; padding: 16px; background: var(--primary); color: #fff; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; margin-top: 20px; }
+        .sub-link { text-align: center; margin-top: 20px; font-size: 0.8rem; color: #999; }
+        .sub-link span { cursor: pointer; margin: 0 5px; }
+
+
+    </style>
+</head>
+<body>
+
+{% include 'header.html' %}
+
+    <div class="container">
+        <div class="find-card">
+            <input type="radio" name="find-tab" id="tab1" checked>
+            <input type="radio" name="find-tab" id="tab2">
+
+            <div class="tab-menu">
+                <label for="tab1" class="tab-item">아이디 찾기</label>
+                <label for="tab2" class="tab-item">비밀번호 찾기</label>
+            </div>
+
+            <div id="content1" class="tab-content">
+                <div class="form-group">
+                    <span class="form-label">등록된 이메일</span>
+                    <div class="email-row">
+                        <input type="email" id="idFindEmail" class="form-input" placeholder="example@email.com">
+                        <button class="btn-verify" onclick="sendAuth('id')">인증요청</button>
+                    </div>
+                </div>
+                <div id="auth-id" class="auth-section">
+                    <span class="form-label">인증번호 입력</span>
+                    <div style="position:relative;">
+                        <input type="text" id="idAuthNum" class="form-input" placeholder="6자리 숫자 입력">
+                        <span class="timer" id="timer-id">03:00</span>
+                    </div>
+                </div>
+                <button class="action-btn" onclick="findId()">아이디 찾기</button>
+            </div>
+
+            <div id="content2" class="tab-content">
+                <div class="form-group">
+                    <span class="form-label">아이디</span>
+                    <input type="text" id="pwFindId" class="form-input" placeholder="아이디를 입력하세요">
+                </div>
+                <div class="form-group">
+                    <span class="form-label">등록된 이메일</span>
+                    <div class="email-row">
+                        <input type="email" id="pwFindEmail" class="form-input" placeholder="example@email.com">
+                        <button class="btn-verify" onclick="sendAuth('pw')">인증요청</button>
+                    </div>
+                </div>
+                <div id="auth-pw" class="auth-section">
+                    <span class="form-label">인증번호 입력</span>
+                    <div style="position:relative;">
+                        <input type="text" id="pwAuthNum" class="form-input" placeholder="6자리 숫자 입력">
+                        <span class="timer" id="timer-pw">03:00</span>
+                    </div>
+                </div>
+
+                <div id="new-pw-area" style="display:none; margin-top:20px; border-top:2px dashed #eee; padding-top:20px;">
+                    <div class="form-group">
+                        <span class="form-label">새 비밀번호</span>
+                        <input type="password" id="newPw" class="form-input" placeholder="8자 이상 영문, 숫자, 특수문자 조합">
+                    </div>
+                    <div class="form-group">
+                        <span class="form-label">새 비밀번호 확인</span>
+                        <input type="password" id="newPwConfirm" class="form-input" placeholder="한 번 더 입력하세요">
+                    </div>
+                    <button class="action-btn" style="background-color: #22b14c;" onclick="resetPw()">비밀번호 변경 완료</button>
+                </div>
+
+                <button id="pw-find-btn" class="action-btn" style="background:var(--danger)" onclick="findPw()">인증번호 확인</button>
+            </div>
+
+            <div class="sub-link">
+                <span onclick="location.href='{{ url_for('auth.login') }}'">로그인하러 가기</span> |
+                <span onclick="location.href='{{ url_for('auth.signup') }}'">회원가입</span>
+            </div>
+        </div>
+    </div>
+
+{% include 'footer.html' %}
+
+<button id="btn-back-to-top" title="맨 위로 가기">↑</button>
+
+<script>
+    let activeTimer = null;
+
+
+    window.addEventListener('load', function() {
+        // URL의 파라미터를 읽어옵니다.
+        const urlParams = new URLSearchParams(window.location.search);
+        const type = urlParams.get('type');
+
+        // 만약 type이 'pw'라면 비밀번호 찾기 탭(tab2)을 체크합니다.
+        if (type === 'pw') {
+            const pwTab = document.getElementById('tab2');
+            if (pwTab) {
+                pwTab.checked = true;
+            }
+        }
+    });
+
+    function toggleSupportMenu() {
+        const content = document.getElementById('support-content');
+        const icon = document.getElementById('toggle-icon');
+        if (content.classList.contains('show')) {
+            content.classList.remove('show');
+            icon.innerText = '▼';
+        } else {
+            content.classList.add('show');
+            icon.innerText = '▲';
+        }
+    }
+
+    // 바깥 클릭 시 닫기 기능 추가
+    window.onclick = function(event) {
+        if (!event.target.matches('.toggle-btn')) {
+            const content = document.getElementById('support-content');
+            if (content.classList.contains('show')) {
+                content.classList.remove('show');
+                document.getElementById('toggle-icon').innerText = '▼';
+            }
+        }
+    }
+
+
+// 1. 실제 이메일 전송 함수
+    function sendAuth(type) {
+        const btn = event.target;
+        const emailInput = type === 'id' ? document.getElementById('idFindEmail') : document.getElementById('pwFindEmail');
+        const userIdInput = document.getElementById('pwFindId'); // 비번 찾기용 아이디 입력
+        const authSection = type === 'id' ? document.getElementById('auth-id') : document.getElementById('auth-pw');
+        const timerDisplay = type === 'id' ? document.getElementById('timer-id') : document.getElementById('timer-pw');
+
+        if (!emailInput.value.includes('@')) {
+            alert("올바른 이메일 주소를 입력해 주세요.");
+            return;
+        }
+
+        // 비밀번호 찾기 시 아이디 입력 여부 체크
+        if (type === 'pw' && !userIdInput.value) {
+            alert("아이디를 먼저 입력해 주세요.");
+            userIdInput.focus();
+            return;
+        }
+
+        // 버튼 상태 변경 (발송 시도 시작)
+        btn.disabled = true;
+        btn.innerText = "조회 중...";
+
+        fetch("{{ url_for('auth.send_auth_email') }}", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                email: emailInput.value,
+                type: type,  // 'id' 또는 'pw'
+                user_id: type === 'pw' ? document.getElementById('pwFindId').value : null
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                // 정보가 존재하고 실제 발송까지 완료된 경우
+                alert("인증번호가 이메일로 전송되었습니다.");
+                authSection.style.display = 'block';
+                startTimer(timerDisplay);
+                btn.innerText = "재발송"; // 성공 후 텍스트 변경
+                btn.disabled = false;
+            } else {
+                // 가입되지 않은 이메일이거나 아이디가 일치하지 않는 경우
+                alert(data.message); // 예: "해당 정보로 가입된 회원이 없습니다."
+                btn.disabled = false;
+                btn.innerText = "인증요청";
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("서버 통신 중 오류가 발생했습니다.");
+            btn.disabled = false;
+            btn.innerText = "인증요청";
+        });
+    }
+
+    // 타이머 시작 함수
+    function startTimer(display) {
+        if (activeTimer) clearInterval(activeTimer);
+        let time = 180;
+        activeTimer = setInterval(() => {
+            let min = Math.floor(time / 60);
+            let sec = time % 60;
+            display.innerText = `${min < 10 ? '0' + min : min}:${sec < 10 ? '0' + sec : sec}`;
+            if (--time < 0) {
+                clearInterval(activeTimer);
+                display.innerText = "만료";
+            }
+        }, 1000);
+    }
+
+    // 2. 실제 아이디 찾기 완료
+    function findId() {
+        const email = document.getElementById('idFindEmail').value;
+        const code = document.getElementById('idAuthNum').value;
+
+        // 인증번호 검증 (이미 만들어두신 verify_code 사용)
+        fetch("{{ url_for('auth.verify_code') }}", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: email, code: code })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                // 인증 성공 시 아이디 정보 요청
+                return fetch("{{ url_for('auth.find_id_result') }}", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email: email })
+                });
+            } else {
+                throw new Error("인증번호가 일치하지 않습니다.");
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                alert("회원님의 아이디는 [ " + data.user_id + " ] 입니다.");
+                location.href = "{{ url_for('auth.login') }}";
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(err => alert(err.message));
+    }
+
+    // 3. 실제 비밀번호 찾기(인증) 완료
+    function findPw() {
+        const email = document.getElementById('pwFindEmail').value;
+        const code = document.getElementById('pwAuthNum').value;
+
+        fetch("{{ url_for('auth.verify_code') }}", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: email, code: code })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                alert("인증되었습니다. 새로운 비밀번호를 설정해 주세요.");
+                document.getElementById('pw-find-btn').style.display = 'none';
+                document.getElementById('new-pw-area').style.display = 'block';
+                if (activeTimer) clearInterval(activeTimer);
+            } else {
+                alert("인증번호가 올바르지 않습니다.");
+            }
+        });
+    }
+
+    // 4. 새 비밀번호 저장
+    function resetPw() {
+        const userId = document.getElementById('pwFindId').value;
+        const newPw = document.getElementById('newPw').value;
+        const newPwConfirm = document.getElementById('newPwConfirm').value;
+        const pwRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/;
+
+        if (!newPw) { alert("새 비밀번호를 입력해주세요."); return; }
+        if (!pwRegex.test(newPw)) {
+            alert("비밀번호는 영문, 숫자, 특수문자를 포함하여 8자 이상이어야 합니다.");
+            return;
+        }
+        if (newPw !== newPwConfirm) {
+            alert("비밀번호 확인이 일치하지 않습니다.");
+            return;
+        }
+
+        fetch("{{ url_for('auth.reset_password_find') }}", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ user_id: userId, password: newPw })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                alert("비밀번호가 성공적으로 변경되었습니다. 다시 로그인해 주세요.");
+                location.href = "{{ url_for('auth.login') }}";
+            } else {
+                alert("변경 실패: " + data.message);
+            }
+        });
+    }
+    document.getElementById('btn-back-to-top').addEventListener('click', function() {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    });
+</script>
+
+</body>
+</html>

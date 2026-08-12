@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>서울시 AI 미세먼지 보건 예보</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+
+
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* --- 환경 정보 칩 스타일 --- */
+        .map-overlay-info {
+            position: absolute; top: 15px; left: 15px; z-index: 10;
+            display: flex; gap: 10px; pointer-events: none;
+        }
+        .info-chip {
+            background: rgba(255, 255, 255, 0.9); padding: 8px 15px; border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); font-weight: 800; font-size: 0.82rem;
+            display: flex; align-items: center; gap: 6px; border: 1px solid rgba(0,0,0,0.05);
+        }
+        .info-chip span { color: #888; font-weight: 600; }
+
+        /* 왼쪽 패널 */
+        .left { width:280px; display:flex; flex-direction:column; gap:15px; }
+        .btn-group { display:flex; flex-direction:column; gap:8px; }
+        .btn { padding:12px; border:1px solid #eee; border-radius:10px; background:#fff; cursor:pointer; text-align: left; font-size: 0.85rem; transition: 0.2s; color: #333; font-weight: 600; }
+        .btn.active { background:#333; color:#fff; border-color: #333; font-weight: 800; }
+
+        /* 3일 농도 막대 그래프 */
+        /* 3일 농도 막대 그래프 영역 수정본 */
+        .chart-container {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            height: 100px; /* 전체 높이 고정 */
+            padding-top: 25px; /* 숫자가 표시될 상단 여유 공간 */
+        }
+
+        .bar-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 30%;
+            position: relative;
+        }
+
+        .bar-val {
+            font-size: 10px;
+            font-weight: 800;
+            margin-bottom: 5px;
+            text-align: center;
+            color: #333;
+        }
+
+        .bar {
+            width: 25px;
+            background: #eee;
+            border-radius: 4px 4px 0 0;
+            transition: height 0.5s ease;
+            position: relative;
+            max-height: 70px; /* 300이 들어와도 여기서 멈춤! */
+        }
+
+        .bar-label {
+            font-size: 10px;
+            color: #888;
+            margin-top: 8px;
+            font-weight: 600;
+        }
+
+        /* [중요] 로그인 박스 및 하단 푸터 (좌측 하단 디자인 복구) */
+        #profile-view { display: none; }
+        .login-box { display: flex; flex-direction: column; gap: 8px; }
+        .login-input { padding: 10px; border: 1px solid #eee; border-radius: 8px; font-size: 0.8rem; outline: none; }
+        .login-btn {
+            padding: 12px;
+            background: #333;
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 0.85rem;
+        }
+
+        .login-btn:hover {
+            background: #000;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        /* 삭제되었던 좌측 하단 가로 정렬 스타일 복구 */
+        .login-footer {
+            display: flex !important;
+            justify-content: center !important;
+            gap: 12px !important;
+            margin-top: 12px !important;
+            font-size: 0.75rem !important;
+            color: #888 !important;
+            font-weight: 600 !important;
+        }
+        .login-footer a {
+            color: inherit !important;
+            text-decoration: none !important;
+            cursor: pointer !important;
+        }
+        .wrapper {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh; /* 화면 높이 100% 확보 */
+        }
+
+        /* 2. 레이아웃 영역 */
+        .layout {
+            display: flex;
+            gap: 15px;
+            /* 지도가 고정되길 원하시니 flex: 0 0 auto로 설정하거나
+               아래처럼 flex: 1을 주되 푸터에 마진을 줍니다. */
+            padding-bottom: 100px; /* 지도가 끝난 뒤 푸터와의 사이에 여백 생성 */
+        }
+
+        /* 3. 푸터 설정 (핵심) */
+        footer {
+            margin-top: auto !important; /* 위쪽 요소가 작아도 푸터는 무조건 바닥으로! */
+            padding: 30px 0;
+            flex-shrink: 0;
+        }
+
+        /* 지역 선택 및 기타 UI */
+        .my-region-card {
+            background: #f8f9fa; /* 너무 튀지 않는 색상으로 변경 */
+            border: 1px solid #eee;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+        .region-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; font-weight: 800; color: var(--warning); margin-bottom: 8px; }
+        .region-select { width: 100%; padding: 5px; border-radius: 6px; border: 1px solid var(--warning); font-size: 0.85rem; font-weight: 700; color: #333; outline: none; background: #fff; }
+        .status-badge { background: var(--warning); color: #fff; padding: 5px 12px; border-radius: 8px; font-weight: 900; font-size: 0.82rem; margin-top: 10px; display: inline-block; }
+
+        /* 중앙 지도 */
+        .center {
+            flex: 1;
+            background: #fff;
+            border-radius: 20px;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+        }
+        .map-box {
+            flex: 1;             /* 부모인 .center 높이에 맞춰 꽉 차게 */
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid #eee;
+            position: relative;
+            background: #f0f0f0;
+            min-height: 600px;   /* 지도가 보일 최소 높이 */
+        }
+        #map { width:100% !important; height:100% !important; }
+
+        /* 우측 분석 */
+        .right { width:320px; display:flex; flex-direction:column; gap:15px; }
+        .analysis-item { background:#f9f9f9; padding:15px; border-radius:12px; border-left: 5px solid #ddd; margin-bottom: 5px;}
+        .analysis-label { font-size:0.8rem; color:#222; font-weight: 900; margin-bottom: 8px; display: block; }
+        .analysis-val { font-size:0.92rem; color:#111; line-height: 1.6; font-weight: 700; }
+        .hospital-item { display: flex; flex-direction: column; padding: 12px 0; border-bottom: 1px solid #f2f2f2; }
+        .h-name { font-weight: 800; font-size: 0.9rem; color: #222; }
+        .h-phone { font-size: 0.8rem; color: #0066ff; font-weight: 700; margin-top: 3px; }
+        .area-label { font-size:10px; font-weight:800; color:#333; text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff; pointer-events: none; }
+
+        /* 지도 등급 범주 */
+        .map-legend {
+            position: absolute; bottom: 15px; right: 15px; z-index: 10;
+            background: rgba(255, 255, 255, 0.9); padding: 10px 12px; border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 1px solid rgba(0,0,0,0.05);
+            display: flex; flex-direction: column; gap: 6px;
+        }
+        .legend-title { font-size: 0.75rem; font-weight: 800; color: #555; margin-bottom: 4px; text-align: center; }
+        .legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; font-weight: 700; color: #222; }
+        .color-box { width: 14px; height: 14px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.1); }
+        /* 범례 숫자(범위) 스타일 - 새로 추가하세요! */
+        .range-text {
+            font-size: 0.7rem;
+            color: #888;
+            font-weight: 500;
+            margin-left: auto; /* 숫자만 오른쪽으로 쫙 밀어줍니다 */
+            padding-left: 10px;
+            display: inline-block; /* 위치 조절을 위해 필요 */
+        }
+
+        .card-title {
+            margin-bottom: 10px !important; /* 지표 선택 글자 아래 여백을 시원하게! */
+            font-size: 0.85rem;
+            font-weight: 800;
+            color: #555;
+            display: block; /* 여백이 잘 적용되도록 설정 */
+        }
+    </style>
+</head>
+
+<body>
+
+<div id="loading-spinner" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.9); z-index:10000; display:flex; justify-content:center; align-items:center; font-weight:800;">
+    <div style="text-align:center;">
+        <div class="loader" style="border: 8px solid #f3f3f3; border-top: 8px solid #3498db; border-radius: 50%; width: 60px; height: 60px; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
+        <p style="font-size: 1.2rem; color: #333;">서울시 AI 환경 데이터 분석 중...</p>
+    </div>
+</div>
+
+{% include 'header.html' %}
+
+    <div class="layout">
+        <div class="left">
+            <div class="card">
+                <div class="card-title">지표 선택</div>
+                <div class="btn-group">
+                    <button class="btn active" onclick="changeIndicator(this, 'total')">종합 보건 위험 등급</button>
+                    <button class="btn" onclick="changeIndicator(this, 'pm10')">미세먼지 (PM10)</button>
+                    <button class="btn" onclick="changeIndicator(this, 'pm25')">초미세먼지 (PM2.5)</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">최근 3일 농도 추이 (PM10 / PM2.5)</div>
+                <div style="height: 180px; width: 100%;"> <canvas id="combinedTrendChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: auto;">
+                <div class="card-title">USER INFO</div>
+
+                {% if not session.get('user_id') %}
+                <div id="login-view" style="text-align: center; padding: 10px 0;">
+                    <p style="font-size: 0.8rem; color: #666; margin-bottom: 12px; font-weight: 600;">분석 리포트를 저장하고<br>관심 지역을 설정해보세요.</p>
+                    <button class="login-btn" style="width: 100%;" onclick="location.href='{{ url_for('auth.login') }}'">로그인하기</button>
+                    <div class="login-footer">
+                        <a href="{{ url_for('auth.signup') }}">회원가입</a> |
+                        <a href="{{ url_for('auth.find_account') }}">계정 찾기</a>
+                    </div>
+                </div>
+                {% else %}
+                <div id="profile-view" style="display: block;">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
+                        <div style="width: 42px; height: 42px; background: #333; border-radius: 50%; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem;">
+                            {{ session.get('user_name')[0] if session.get('user_name') else 'U' }}
+                        </div>
+                        <div>
+                            <div style="font-weight: 900; font-size: 1.05rem;">{{ session.get('user_name', '사용자') }} 님</div>
+                            <div style="font-size: 0.75rem; color: #888;">반갑습니다!</div>
+                        </div>
+                    </div>
+
+                    <div class="my-region-card" style="text-align: center; padding: 20px 10px;">
+                        <div class="region-header" style="justify-content: center; margin-bottom: 5px;">MY 관심 지역</div>
+
+                        <div id="user-region-name" style="font-size: 1.4rem; font-weight: 900; color: #333; margin-bottom: 8px;">
+                            {{ session.get('user_region', '지역 미설정') }}
+                        </div>
+
+                        <div class="status-badge" id="my-region-status" style="margin-top: 0; width: 80%;">
+                            데이터 분석 중...
+                        </div>
+                    </div>
+
+                    <button class="login-btn" style="background:#f5f5f5; color:#666; width:100%; border: 1px solid #eee;" onclick="location.href='{{ url_for('auth.logout') }}'">로그아웃</button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="center">
+            <div class="map-box">
+                <div class="map-overlay-info">
+                    <div class="info-chip">🕒 <span>업데이트</span> <b id="update-time">00:00</b></div>
+                    <div class="info-chip">🌡️ <span>기온</span> <b id="current-temp">-°C</b></div>
+                    <div class="info-chip">💧 <span>습도</span> <b id="current-humi">-%</b></div>
+                </div>
+                <div id="map"></div>
+
+                <div class="map-legend">
+                    <div class="legend-title" id="legend-type-title">보건 위험 등급</div>
+                    <div class="legend-item"><div class="color-box" style="background:#ff4d4d;"></div>🔴 매우위험 <span class="range-text">(151+)</span></div>
+                    <div class="legend-item"><div class="color-box" style="background:#f06e14;"></div>🟠 위험 <span class="range-text">(81~150)</span></div>
+                    <div class="legend-item"><div class="color-box" style="background:#ffbb00;"></div>🟡 보통 <span class="range-text">(31~80)</span></div>
+                    <div class="legend-item"><div class="color-box" style="background:#00c73c;"></div>🟢 안전 <span class="range-text">(0~30)</span></div>
+                    <div class="legend-item"><div class="color-box" style="background:#a0a0a0;"></div>⚪ 점검 중</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="right">
+            <div class="card" style="display:flex; flex-direction:column; margin-bottom: 15px;">
+                <div class="card-title">AI 모델 분석 근거</div>
+                <div id="sel-name" style="font-size:1.7rem; font-weight:900; margin-bottom:5px; color:#000;">지역 선택</div>
+                <div id="sel-status" style="font-size:1.3rem; font-weight:900; margin-bottom:15px;">-</div>
+                <div class="analysis-item"><span class="analysis-label">최근 오염 누적 (PM10)</span><div class="analysis-val" id="an-lag">-</div></div>
+                <div class="analysis-item" style="border-left-color:var(--danger); background:#fff5f5;"><span class="analysis-label" style="color:var(--danger);">환자 발생 위험도 (AI 예측 정확도 : 95%)</span><div class="analysis-val" id="an-health" style="font-weight:900; color:#b00;">-</div></div>
+                <div class="analysis-item" style="border-left-color:#333;"><span class="analysis-label">종합 판정 이유</span><div class="analysis-val" id="an-reason">-</div></div>
+            </div>
+            <div class="card" style="flex:1;">
+                <div class="card-title">주변 거점 병원 추천</div>
+                <div id="hospital-results"><div style="color:#aaa; text-align:center; padding-top:20px; font-weight:700;">지도의 자치구를 클릭하세요.</div></div>
+            </div>
+        </div>
+    </div>
+
+{% include 'footer.html' %}
+
+<button id="btn-back-to-top" title="맨 위로 가기">↑</button>
+<script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=a9a754405ed813c817e2cc2d7091955b&libraries=services"></script>
+<script>
+    let combinedChart;
+
+    function toggleSupportMenu() {
+    const content = document.getElementById('support-content');
+    const icon = document.getElementById('toggle-icon');
+    if (content.classList.contains('show')) {
+        content.classList.remove('show');
+        icon.innerText = '▼';
+    } else {
+        content.classList.add('show');
+        icon.innerText = '▲';
+    }
+}
+
+window.onclick = function(event) {
+    if (!event.target.matches('.toggle-btn')) {
+        const dropdowns = document.getElementsByClassName("toggle-content");
+        for (let i = 0; i < dropdowns.length; i++) {
+            if (dropdowns[i].classList.contains('show')) {
+                dropdowns[i].classList.remove('show');
+                if(document.getElementById('toggle-icon')) document.getElementById('toggle-icon').innerText = '▼';
+            }
+        }
+    }
+};
+
+// 2. 지도 및 데이터 초기 설정
+var currentType = 'total';
+var map = new kakao.maps.Map(document.getElementById('map'), {
+    center: new kakao.maps.LatLng(37.5665, 126.9780),
+    level: 9
+});
+map.setMaxLevel(9);
+
+var sw = new kakao.maps.LatLng(37.42, 126.75), ne = new kakao.maps.LatLng(37.71, 127.20);
+var bounds = new kakao.maps.LatLngBounds(sw, ne);
+
+kakao.maps.event.addListener(map, 'dragend', function() {
+    if (!bounds.contain(map.getCenter())) {
+        map.panTo(new kakao.maps.LatLng(37.5665, 126.9780));
+    }
+});
+
+// Flask 데이터 바인딩 (에러 방지용 기본값 포함)
+var dataSets = {{ data_sets|safe }} || { total: {}, pm10: {}, pm25: {}, clusters: {}, temp: "-", humi: "-" };
+var pastData = {{ history_data|safe }} || {};
+var pastData25 = {{ history_data_pm25|safe }} || {};
+
+// 초기 정보 표시
+document.getElementById('current-temp').innerText = dataSets.temp + "°C";
+document.getElementById('current-humi').innerText = dataSets.humi + "%";
+
+if (dataSets.time && dataSets.time.length >= 12) {
+    var hour = dataSets.time.substring(8, 10);
+    var min = dataSets.time.substring(10, 12);
+    document.getElementById('update-time').innerText = hour + ":" + min;
+} else {
+    document.getElementById('update-time').innerText = "점검 중";
+}
+
+var ps = new kakao.maps.services.Places();
+var polygons = [];
+var riskColors = { '-1': '#a0a0a0', 5: '#ff4d4d', 3: '#f06e14', 4: '#ffbb00', 2: '#ffbb00', 1: '#00c73c', 0: '#00c73c' };
+var riskLabels = { '-1': '⚪ 점검 중', 5: '🔴 매우위험', 3: '🟠 위험', 4: '🟡 보통', 2: '🟡 보통', 1: '🟢 안전', 0: '🟢 안전' };
+
+// 3. 지점 선택 및 지표 변경 로직 (기존 함수 유지)
+function getRiskLevelFromValue(val, type) {
+    if (!val || val === "-" || val === 0) return -1;
+    var standards = { pm10: [30, 80, 150], pm25: [15, 35, 75] };
+    var thresholds = standards[type];
+    if (val <= thresholds[0]) return 0;
+    if (val <= thresholds[1]) return 4;
+    if (val <= thresholds[2]) return 3;
+    return 5;
+}
+
+// 4. 지도 GeoJSON 로드 및 초기 구 선택 (수정본)
+fetch('https://raw.githubusercontent.com/southkorea/seoul-maps/master/kostat/2013/json/seoul_municipalities_geo_simple.json')
+.then(res => res.json())
+.then(json => {
+    json.features.forEach(f => {
+        var name = f.properties.name;
+        var path = f.geometry.coordinates[0].map(c => new kakao.maps.LatLng(c[1], c[0]));
+        var lat = 0, lng = 0;
+        path.forEach(p => { lat += p.getLat(); lng += p.getLng(); });
+        var cLat = lat / path.length, cLng = lng / path.length;
+
+        // 초기 생성 시에는 일단 기본 색으로 생성
+        var polygon = new kakao.maps.Polygon({
+            map: map, path: path, strokeWeight: 1.5, strokeColor: '#fff',
+            fillColor: '#a0a0a0', fillOpacity: 0.7
+        });
+
+        polygons.push({name: name, polygon: polygon, lat: cLat, lng: cLng});
+
+        kakao.maps.event.addListener(polygon, 'click', function() {
+            selectArea(name, cLat, cLng);
+            if(document.getElementById('region-selector')) document.getElementById('region-selector').value = name;
+        });
+
+        new kakao.maps.CustomOverlay({
+            map: map, position: new kakao.maps.LatLng(cLat, cLng),
+            content: `<div class="area-label">${name}</div>`
+        });
+    });
+
+    // --- [중요 수정] 지도가 다 그려진 직후에 URL 파라미터를 체크하여 색상을 입힙니다. ---
+    const urlParams = new URLSearchParams(window.location.search);
+    const type = urlParams.get('type') || 'total'; // 파라미터 없으면 total
+    const targetBtn = document.querySelector(`.btn[onclick*="'${type}'"]`);
+
+    if (targetBtn) {
+        // 이미 그려진 폴리곤들에 대해 정확한 type의 색상을 입힙니다.
+        changeIndicator(targetBtn, type);
+    }
+
+    // 기본 지역 선택 (사용자 설정 혹은 중구)
+    const defaultArea = "{{ session.get('user_region', '중구') }}";
+    const target = polygons.find(p => p.name === defaultArea);
+    if (target) {
+        setTimeout(() => selectArea(target.name, target.lat, target.lng), 200);
+    }
+});
+
+// 5. 통합된 페이지 로드 핸들러 (중복 제거됨)
+// 페이지 로드 시 실행
+// 페이지 로드 시 통합 실행 핸들러
+window.addEventListener('load', function() {
+    // 1. 로딩 스피너 제거
+    const spinner = document.getElementById('loading-spinner');
+    if (spinner) {
+        spinner.style.opacity = '0';
+        spinner.style.transition = 'opacity 0.5s ease';
+        setTimeout(() => spinner.style.display = 'none', 500);
+    }
+
+    document.querySelectorAll('.range-text').forEach(r => r.style.display = 'none');
+
+    // [수정] URL 체크는 이제 GeoJSON fetch가 끝나는 시점에 수행하므로 여기서는 제거하거나
+    // 배지 업데이트 정도만 수행합니다.
+    const userRegion = "{{ session.get('user_region', '') }}";
+    if (userRegion) {
+        const level = dataSets['total'][userRegion] || 0;
+        const badge = document.getElementById('my-region-status');
+        if (badge) {
+            badge.innerText = riskLabels[level] || "점검 중";
+            badge.style.background = riskColors[level] || "#a0a0a0";
+        }
+    }
+});
+function selectArea(name, lat, lng) {
+    let cleanName = name.trim();
+    // '구'가 붙어있든 아니든 다 찾아내기 위한 변수들
+    let shortName = cleanName.replace(/구$/, '');
+    let longName = shortName + "구";
+
+    // --- [중요: 위치 변경] 에러 방지를 위해 analysisMap을 가장 먼저 선언합니다 ---
+    const analysisMap = {
+        5: {
+            lag: "최근 4일 평균 {avg}㎍/㎥",
+            health: "🔴 매우 위험 (보건 주의보)",
+            reason: "최근 4일간 고농도 미세먼지가 체내에 깊숙이 누적되었습니다. 이미 호흡기가 받은 누적 부담이 임계치를 넘어선 '고위험군' 단계입니다."
+        },
+        3: {
+            lag: "최근 4일 평균 {avg}㎍/㎥",
+            health: "🟠 위험 (실외 활동 자제)",
+            reason: "며칠간 유입된 오염원이 대기 중에 잔류하며 호흡기에 지속적인 자극을 주고 있습니다. 겉으로 보이는 농도보다 체감되는 건강 위험도가 훨씬 높으니 각별한 주의가 필요합니다."
+        },
+        4: {
+            lag: "최근 4일 평균 {avg}㎍/㎥",
+            health: "🟡 보통 (기상 변동성 주의)",
+            reason: "평균 농도는 보통 수준이나, 대기 질이 급변하기 쉬운 상태입니다. 며칠간 누적된 미세먼지로 인해 호흡기가 예민해져 있어, 작은 오염 농도 상승에도 큰 피로감을 느낄 수 있습니다."
+        },
+        2: {
+            lag: "최근 4일 평균 {avg}㎍/㎥",
+            health: "🟡 보통 (누적 오염 관리)",
+            reason: "지역의 산업 활동과 교통량 등 복합적인 요인으로 인해 미세먼지가 체내에 미세하게 계속 쌓이는 환경입니다. 외부 농도 수치에 안심하기보다는 지속적인 호흡기 보호가 필요한 '누적 관리' 구간입니다."
+        },
+        1: {
+            lag: "최근 4일 평균 {avg}㎍/㎥",
+            health: "🟢 안전 (일반적 양호)",
+            reason: "지난 4일간 대기 확산이 원활하여 체내에 쌓인 미세먼지 부담이 적은 상태입니다. 호흡기가 비교적 편안하게 회복할 수 있는 공기 질을 유지하고 있습니다."
+        },
+        0: {
+            lag: "최근 4일 평균 {avg}㎍/㎥",
+            health: "🟢 안전 (매우 쾌적)",
+            reason: "최근 기온과 습도, 미세먼지 농도가 모두 보건 최적 범위를 유지하고 있습니다."
+        },
+        '-1': {
+            lag: "데이터를 불러오는 중입니다.",
+            health: "측정소 점검 중",
+            reason: "현재 해당 지역의 실시간 관측 데이터를 확인할 수 없습니다."
+        }
+    };
+
+    console.log("--- 클릭한 지역: " + cleanName + " ---");
+
+    // 2. 데이터 찾기 (과거 3일 농도)
+    let d = pastData[shortName] || pastData[longName] || pastData[cleanName];
+    if (!d) {
+        let keys = Object.keys(pastData);
+        let foundKey = keys.find(k => k.includes(shortName));
+        if (foundKey) d = pastData[foundKey];
+    }
+
+    if (!d || d.length === 0) {
+        console.error(cleanName + " 과거 데이터를 찾을 수 없습니다.");
+        d = [0, 0, 0];
+    }
+
+    // 3. UI 업데이트 (이름 및 상태 등급 결정)
+    document.getElementById('sel-name').innerText = cleanName;
+
+    const activeBtn = document.querySelector('.btn.active');
+    const btnText = activeBtn ? activeBtn.innerText : "";
+    let displayVal = "";
+    let label = "";
+    let lv; // 등급을 담을 변수
+
+    // [핵심 수정]: 현재 버튼 상태에 따라 등급(lv)을 다르게 계산합니다.
+    if (btnText.includes("초미세먼지")) {
+        let val = dataSets['pm25'][cleanName] || dataSets['pm25'][shortName] || 0;
+        displayVal = (val > 0) ? val + "㎍/㎥" : "점검 중";
+        label = "PM2.5";
+        // 초미세먼지 수치를 기준으로 등급을 다시 계산 (예: 도봉구 수치가 낮으면 '좋음' 등급 반환)
+        lv = getRiskLevelFromValue(val, 'pm25');
+    } else if (btnText.includes("미세먼지")) {
+        let val = dataSets['pm10'][cleanName] || dataSets['pm10'][shortName] || 0;
+        displayVal = (val > 0) ? val + "㎍/㎥" : "점검 중";
+        label = "PM10";
+        // 미세먼지 수치를 기준으로 등급 계산
+        lv = getRiskLevelFromValue(val, 'pm10');
+    } else {
+        // '종합 보건 위험 등급' 버튼이 활성화된 경우 기존 로직 유지
+        lv = dataSets['total'][cleanName] || dataSets['total'][shortName] || 0;
+    }
+
+    // 등급 텍스트 출력
+    if (label !== "") {
+        document.getElementById('sel-status').innerHTML = `
+            ${riskLabels[lv]}
+            <span style="font-size: 1.1rem; color: #333; font-weight: 800; margin-left: 10px;">
+                (${label}: ${displayVal})
+            </span>
+        `;
+    } else {
+        document.getElementById('sel-status').innerText = riskLabels[lv];
+    }
+    // 등급 색상 적용
+    document.getElementById('sel-status').style.color = riskColors[lv];
+
+    let d10 = pastData[shortName] || pastData[longName] || pastData[cleanName] || [0, 0, 0];
+    let d25 = pastData25[shortName] || pastData25[longName] || pastData25[cleanName] || [0, 0, 0];
+    const labels = ['3일 전', '2일 전', '어제'];
+
+    // 2. 통합 차트 생성 또는 업데이트
+    if (!combinedChart) {
+        const ctx = document.getElementById('combinedTrendChart').getContext('2d');
+        combinedChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: '미세먼지(PM10)',
+                        data: d10,
+                        borderColor: '#ed1c24', // 빨간색
+                        backgroundColor: 'rgba(237, 28, 36, 0.05)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 3,
+                        pointBackgroundColor: '#ed1c24'
+                    },
+                    {
+                        label: '초미세(PM2.5)',
+                        data: d25,
+                        borderColor: '#333', // 검은색
+                        backgroundColor: 'rgba(0, 0, 0, 0.05)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 3,
+                        pointBackgroundColor: '#333'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index', // 마우스를 올렸을 때 두 지표를 같이 보여줌
+                    intersect: false,
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        align: 'end',
+                        labels: {
+                            boxWidth: 8,
+                            usePointStyle: true,
+                            font: { size: 10, weight: '800' }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                        titleColor: '#000',
+                        bodyColor: '#000',
+                        borderColor: '#eee',
+                        borderWidth: 1,
+                        bodyFont: { weight: 'bold' }
+                    }
+                },
+                scales: {
+                    x: { grid: { display: false }, ticks: { font: { size: 10, weight: '600' } } },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#f0f0f0', drawBorder: false },
+                        ticks: { font: { size: 9 } }
+                    }
+                }
+            }
+        });
+    } else {
+        // 기존 차트가 있으면 데이터셋만 업데이트
+        combinedChart.data.datasets[0].data = d10;
+        combinedChart.data.datasets[1].data = d25;
+        combinedChart.update('none'); // 'none'을 주면 애니메이션 없이 즉시 업데이트되어 빠릿해 보입니다
+    }
+
+    // 5. 군집/분석 정보 가져오기 (cId 사용)
+    const cId = dataSets['clusters'][cleanName] || dataSets['clusters'][shortName];
+
+    if (cId === null || cId === undefined) {
+        document.getElementById('an-lag').innerText = "데이터 수집 중...";
+        document.getElementById('an-health').innerText = "분석 중...";
+        document.getElementById('an-reason').innerText = "해당 지역의 상세 군집 정보가 등록되지 않았습니다.";
+    } else {
+        const info = analysisMap[cId];
+        if (info) {
+            document.getElementById('an-lag').innerText = info.lag;
+            document.getElementById('an-health').innerText = info.health;
+            document.getElementById('an-reason').innerText = info.reason;
+        } else {
+            document.getElementById('an-reason').innerText = "정의되지 않은 군집 유형입니다.";
+        }
+    }
+
+    let todayPM10 = dataSets['pm10'][cleanName] || dataSets['pm10'][shortName] || 0;
+    let combined4Days = [...d10, todayPM10];
+    let avgVal = (combined4Days.reduce((a, b) => a + b, 0) / 4).toFixed(1);
+
+    if (cId === null || cId === undefined || cId === '-1') {
+        document.getElementById('an-lag').innerText = "데이터 수집 중...";
+        document.getElementById('an-health').innerText = "분석 중...";
+        document.getElementById('an-reason').innerText = "해당 지역의 상세 정보가 없습니다.";
+    } else {
+        const info = analysisMap[cId];
+        if (info) {
+            // [핵심] {avg} 글자를 계산된 avgVal로 바꿔서 화면에 출력합니다.
+            let lagText = info.lag.replace("{avg}", avgVal);
+            document.getElementById('an-lag').innerText = lagText;
+
+            document.getElementById('an-health').innerText = info.health;
+            document.getElementById('an-reason').innerText = info.reason;
+        } else {
+            document.getElementById('an-reason').innerText = "정의되지 않은 군집 유형입니다.";
+        }
+    }
+
+
+    // 6. 미세먼지 관련 병원(호흡기, 이비인후과, 종합병원) 검색
+// 키워드를 "자치구명 + 호흡기" 등으로 검색하면 더 정확합니다.
+    const searchKeyword = `${cleanName} 호흡기내과`;
+
+    ps.keywordSearch(searchKeyword, function(data, status) {
+        if (status === kakao.maps.services.Status.OK) {
+            let html = '';
+            // 검색 결과 중 상위 3개만 표시
+            for(let j=0; j<Math.min(data.length, 3); j++) {
+                // 병원 이름에 '치과', '성형외과', '피부과' 등이 포함되어 있다면 제외하는 필터링 (선택 사항)
+                if (data[j].category_name.includes('치과') || data[j].category_name.includes('피부과')) continue;
+
+                html += `
+                    <div class="hospital-item">
+                        <span class="h-name">${data[j].place_name}</span>
+                        <span class="h-tag" style="font-size:0.7rem; color:#ff4d4d; font-weight:700;">#호흡기질환 #전문진료</span>
+                        <span class="h-phone">${data[j].phone || '번호 없음'}</span>
+                        <a href="${data[j].place_url}" target="_blank" style="font-size:0.7rem; color:#888; text-decoration:none; margin-top:3px;">위치보기 ↗</a>
+                    </div>`;
+            }
+            document.getElementById('hospital-results').innerHTML = html;
+        } else {
+            // 호흡기내과 결과가 없을 경우 '이비인후과'나 '종합병원'으로 재검색 시도 가능
+            ps.keywordSearch(`${cleanName} 종합병원`, function(data2, status2) {
+                if (status2 === kakao.maps.services.Status.OK) {
+                    let html = '';
+                    for(let j=0; j<Math.min(data2.length, 3); j++) {
+                        html += `<div class="hospital-item"><span class="h-name">${data2[j].place_name}</span><span class="h-phone">${data2[j].phone || '번호 없음'}</span></div>`;
+                    }
+                    document.getElementById('hospital-results').innerHTML = html;
+                } else {
+                    document.getElementById('hospital-results').innerHTML = '<div style="color:#aaa; text-align:center; padding-top:20px;">주변에 전문 병원이 없습니다.</div>';
+                }
+            });
+        }
+    }, { location: new kakao.maps.LatLng(lat, lng), radius: 5000 }); // 반경을 5km로 넓히면 더 잘 잡힙니다.
+}
+
+function changeIndicator(btn, type) {
+    document.querySelectorAll('.left .btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    polygons.forEach(p => {
+        let name = p.name;
+        let riskLevel = -1; // 기본값을 점검중으로 설정
+
+        if (type === 'total') {
+            // [수정] || 0 을 제거하여 백엔드가 준 -1이나 0을 그대로 유지
+            let rawLevel = dataSets['total'][name];
+            riskLevel = (rawLevel !== undefined && rawLevel !== null) ? rawLevel : -1;
+        } else {
+            let val = dataSets[type][name];
+            // [수정] 수치 데이터 자체가 0이거나 없을 경우 무조건 점검중(-1) 처리
+            if (val === 0 || val === "-" || val === null || val === undefined) {
+                riskLevel = -1;
+            } else {
+                riskLevel = getRiskLevelFromValue(val, type);
+            }
+        }
+
+        // [핵심] 타입을 문자열로 강제 변환하여 riskColors['-1']을 확실히 찾도록 함
+        let finalColor = riskColors[String(riskLevel)] || '#a0a0a0';
+        p.polygon.setOptions({ fillColor: finalColor });
+    });
+
+    // 범례 및 타이틀 업데이트 로직 (기존과 동일)
+    const legendTitle = document.querySelector('.legend-title');
+    const ranges = document.querySelectorAll('.range-text');
+
+    if (type === 'total') {
+        legendTitle.innerText = "보건 위험 등급";
+        ranges.forEach(r => r.style.display = 'none');
+    } else if (type === 'pm10') {
+        legendTitle.innerText = "미세먼지 등급 (㎍/㎥)";
+        ranges[0].innerText = "(151+)"; ranges[1].innerText = "(81~150)";
+        ranges[2].innerText = "(31~80)"; ranges[3].innerText = "(0~30)";
+        ranges.forEach(r => r.style.display = 'inline');
+    } else if (type === 'pm25') {
+        legendTitle.innerText = "초미세먼지 등급 (㎍/㎥)";
+        ranges[0].innerText = "(76+)"; ranges[1].innerText = "(36~75)";
+        ranges[2].innerText = "(16~35)"; ranges[3].innerText = "(0~15)";
+        ranges.forEach(r => r.style.display = 'inline');
+    }
+
+    const currentSel = document.getElementById('sel-name').innerText;
+    if(currentSel !== "지역 선택") {
+        const target = polygons.find(p => p.name === currentSel);
+        if(target) {
+            // selectArea를 호출하면 앞서 수정했던 등급(lv) 계산 로직이 작동하며 리포트가 바뀝니다.
+            selectArea(target.name, target.lat, target.lng);
+        }
+    }
+
+    map.relayout();
+}
+
+function updateMyRegion(regionName) {
+    if(!regionName) return;
+
+    // dataSets에서 해당 지역의 등급 가져오기
+    const level = dataSets['total'][regionName] || 0;
+    const statusLabel = riskLabels[level] || "데이터 없음";
+
+    const badge = document.getElementById('my-region-status');
+    badge.innerText = regionName + ": " + statusLabel;
+
+    // 등급에 따른 배지 색상 변경 (옵션)
+    badge.style.background = riskColors[level];
+
+    // 지도의 해당 지역으로 이동
+    const target = polygons.find(p => p.name === regionName);
+    if(target) selectArea(target.name, target.lat, target.lng);
+}
+    document.getElementById('btn-back-to-top').addEventListener('click', function() {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    });
+
+</script>
+</body>
+</html>

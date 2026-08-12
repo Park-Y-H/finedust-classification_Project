@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>마이페이지 | 서울시 AI 미세먼지 보건 분석 시스템</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .container { display:flex; justify-content:center; align-items:center; min-height: calc(100vh - 80px); padding: 40px 0; }
+        .mypage-card { background:#fff; padding:40px; border-radius:24px; box-shadow:0 10px 40px rgba(0,0,0,0.06); width:400px; }
+        .title { font-size: 1.5rem; font-weight: 800; text-align: center; margin-bottom: 30px; }
+
+        .info-box { background: #f8f9fb; padding: 20px; border-radius: 15px; margin-bottom: 25px; border: 1px solid #eee; }
+        .info-item {
+            display: flex;
+            align-items: center; /* 세로 중앙 정렬 */
+            margin-bottom: 15px;
+            font-size: 0.95rem;
+            border-bottom: 1px solid #f0f0f0; /* 항목 간 구분선 (선택사항) */
+            padding-bottom: 10px;
+        }
+
+        .info-item:last-child { border-bottom: none; margin-bottom: 0; }
+
+        .info-label {
+            color: #888;
+            font-weight: bold;
+            width: 100px; /* ★ 항목 이름의 너비를 고정 (가장 중요) */
+            flex-shrink: 0; /* 너비가 줄어들지 않도록 고정 */
+        }
+
+        .info-value {
+            color: #333;
+            font-weight: 800;
+            /* justify-content: space-between을 삭제했으므로 자동으로 라벨 옆에 붙습니다. */
+        }
+        .form-group { margin-bottom: 20px; }
+        .form-label { font-size: 0.75rem; color: #888; font-weight: bold; margin-bottom: 8px; display: block; }
+        .form-input { width: 100%; padding: 12px; border: 1px solid #eee; border-radius: 10px; box-sizing: border-box; outline: none; font-size: 0.9rem; }
+
+        /* 비밀번호 변경 영역 숨김 처리 */
+        #pwChangeArea { display: none; background: #fff4f4; padding: 15px; border-radius: 12px; border: 1px solid #ffebeb; margin-top: 10px; }
+
+        .btn-toggle { width: 100%; padding: 12px; background: #f0f0f0; color: #555; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; margin-bottom: 15px; font-size: 0.85rem; }
+        .save-btn { width: 100%; padding: 16px; background: #333; color: #fff; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; margin-top: 20px; font-size: 1rem; }
+
+        /* 확인 버튼 스타일 */
+        .btn-verify {
+            height: 45px;          /* input 높이와 통일 */
+            min-width: 60px;       /* 최소 너비 확보 */
+            padding: 0 15px;
+            background: #333;      /* var(--primary) 색상 */
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            cursor: pointer;
+            white-space: nowrap;   /* 글자 줄바꿈 방지 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-verify:hover {
+            background: #555;
+        }
+
+        /* 인증 완료 후 스타일 */
+        .btn-verify:disabled {
+            background: #22b14c;   /* 성공 시 초록색 */
+            cursor: default;
+            opacity: 1;            /* 비활성화 시 흐려짐 방지 */
+        }
+    </style>
+</head>
+<body>
+
+{% include 'header.html' %}
+    <div class="container">
+        <div class="mypage-card">
+            <div class="title">내 정보 관리</div>
+
+            <div class="info-box">
+                <div class="info-item">
+                    <span class="info-label">이름</span>
+                    <span class="info-value">{{ user[0] }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">아이디</span>
+                    <span class="info-value">{{ user[1] }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">이메일</span>
+                    <span class="info-value">{{ user[2] }}</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <span class="form-label">관심 지역 수정</span>
+                <select id="updateRegion" class="form-input">
+                    <option value="{{ user[3] }}">{{ user[3] }} (현재)</option>
+                    <option>강남구</option><option>강동구</option><option>강북구</option><option>강서구</option>
+                    <option>관악구</option><option>광진구</option><option>구로구</option><option>금천구</option>
+                    <option>노원구</option><option>도봉구</option><option>동대문구</option><option>동작구</option>
+                    <option>마포구</option><option>서대문구</option><option>서초구</option><option>성동구</option>
+                    <option>성북구</option><option>송파구</option><option>양천구</option><option>영등포구</option>
+                    <option>용산구</option><option>은평구</option><option>종로구</option><option>중구</option>
+                    <option>중랑구</option>
+                </select>
+            </div>
+
+
+            <button class="btn-toggle" id="pwMainBtn" onclick="togglePwArea()">비밀번호를 변경하시겠습니까?</button>
+
+            <div id="pwChangeArea" style="display: none;">
+                <div id="currentPwStep">
+                    <div class="form-group">
+                        <span class="form-label">현재 비밀번호 확인</span>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <input type="password" id="currentPw" class="form-input" placeholder="현재 비밀번호 입력" style="flex: 1;">
+                            <button type="button" class="btn-verify" id="verifyBtn" onclick="verifyCurrentPw()">확인</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="newPwStep" style="display: none; border-top: 1px dashed #ddd; pt-15; margin-top:15px; padding-top:15px;">
+                    <div class="form-group">
+                        <span class="form-label">새 비밀번호</span>
+                        <input type="password" id="newPw" class="form-input" placeholder="8자 이상 조합">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <span class="form-label">새 비밀번호 확인</span>
+                        <input type="password" id="newPwConfirm" class="form-input" placeholder="한번 더 입력">
+                    </div>
+                    <p style="font-size: 0.7rem; color: var(--success); margin-top: 5px;">✓ 현재 비밀번호가 확인되었습니다.</p>
+                </div>
+            </div>
+
+            <button class="save-btn" onclick="saveChanges()">정보 수정하기</button>
+        </div>
+    </div>
+
+{% include 'footer.html' %}
+
+<button id="btn-back-to-top" title="맨 위로 가기">↑</button>
+
+<script>
+
+    let isCurrentPwVerified = false;
+    // 비밀번호 입력창 토글 함수
+    function togglePwArea() {
+        const area = document.getElementById('pwChangeArea');
+        area.style.display = (area.style.display === 'none' || area.style.display === '') ? 'block' : 'none';
+    }
+
+    function verifyCurrentPw() {
+        const currentPw = document.getElementById('currentPw').value;
+        const verifyBtn = document.getElementById('verifyBtn');
+
+        if(!currentPw) { alert("현재 비밀번호를 입력해주세요."); return; }
+
+        fetch("/verify_password", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ password: currentPw })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                isCurrentPwVerified = true;
+                document.getElementById('currentPw').disabled = true; // 입력창 잠금
+                document.getElementById('newPwStep').style.display = 'block'; // 새 비번창 표시
+
+                // 버튼 상태 변경
+                verifyBtn.innerText = "인증완료";
+                verifyBtn.disabled = true; // 더 이상 클릭 안되게
+            } else {
+                alert("비밀번호가 일치하지 않습니다.");
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("통신 중 오류가 발생했습니다.");
+        });
+    }
+
+    function saveChanges() {
+        const region = document.getElementById('updateRegion').value;
+        const pw = document.getElementById('newPw').value;
+        const confirm = document.getElementById('newPwConfirm').value;
+
+        // 비밀번호를 입력하려고 시도 중인데 확인을 안 한 경우
+        if((pw || confirm) && !isCurrentPwVerified) {
+            alert("현재 비밀번호 확인이 필요합니다.");
+            return;
+        }
+
+        if(pw || confirm) {
+            if(pw !== confirm) { alert("비밀번호 확인이 일치하지 않습니다."); return; }
+            if(pw.length < 8) { alert("비밀번호는 8자 이상이어야 합니다."); return; }
+        }
+
+        fetch("{{ url_for('main.update_profile') }}", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                region: region,
+                password: pw // pw가 빈값이면 지역만 업데이트됨
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                alert("정보가 성공적으로 수정되었습니다.");
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        });
+    }
+
+    document.getElementById('btn-back-to-top').addEventListener('click', function() {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>회원가입 | 서울시 AI 미세먼지 보건 분석 시스템</title>
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    
+    <style>
+        :root {
+            --primary: #333;
+            --success: #22b14c;
+            --danger: #ed1c24;
+        }
+
+        .container {
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            min-height: calc(100vh - 80px);
+            padding: 20px 0;
+        }
+
+        .join-card {
+            background:#fff;
+            padding:40px;
+            border-radius:24px;
+            box-shadow:0 10px 40px rgba(0,0,0,0.06);
+            width:400px;
+        }
+
+        .join-title { font-size: 1.5rem; font-weight: 800; text-align: center; margin-bottom: 30px; }
+        .form-group { margin-bottom: 20px; }
+        .form-label { font-size: 0.75rem; color: #888; font-weight: bold; margin-bottom: 8px; display: block; }
+        .form-input { width: 100%; padding: 12px; border: 1px solid #eee; border-radius: 10px; box-sizing: border-box; outline: none; font-size: 0.9rem; }
+        .form-input:focus { border-color: var(--primary); }
+
+        .email-row { display: flex; gap: 8px; margin-bottom: 10px; }
+        .btn-verify { padding: 0 15px; background: var(--primary); color: #fff; border: none; border-radius: 10px; font-size: 0.8rem; font-weight: bold; cursor: pointer; white-space: nowrap; }
+
+        .auth-code-area { background: #f8f9fb; padding: 15px; border-radius: 12px; border: 1px solid #eef0f2; display: none; }
+        .timer { font-size: 0.7rem; color: var(--danger); position: absolute; right: 10px; top: 13px; }
+
+        .pw-msg { font-size: 0.7rem; margin-top: 5px; color: var(--success); display: none; }
+        .join-btn { width: 100%; padding: 16px; background: var(--primary); color: #fff; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 1rem; }
+        .auth-success-msg { font-size: 0.7rem; color: var(--success); font-weight: bold; margin-top: 5px; display: none; }
+
+
+    </style>
+</head>
+<body>
+
+{% include 'header.html' %}
+
+    <div class="container">
+        <div class="join-card">
+            <div class="join-title">회원가입</div>
+
+            <div class="form-group">
+                <span class="form-label">이름</span>
+                <input type="text" id="joinName" class="form-input" placeholder="실명을 입력하세요">
+            </div>
+
+            <div class="form-group">
+                <span class="form-label">아이디</span>
+                <input type="text" id="joinId" class="form-input" placeholder="아이디 입력">
+            </div>
+
+            <div class="form-group">
+                <span class="form-label">이메일 주소</span>
+                <div class="email-row" style="display: flex; gap: 5px; align-items: center;">
+                    <input type="text" id="emailId" class="form-input" placeholder="이메일" style="flex: 1.5; min-width: 0;">
+
+                    <span>@</span>
+
+                    <div style="flex: 2; position: relative; display: flex; gap: 5px;">
+                        <input type="text" id="emailDomain" class="form-input" placeholder="직접 입력" list="domainList" style="flex: 1; min-width: 0;">
+                        <datalist id="domainList">
+                            <option value="naver.com">naver.com</option>
+                            <option value="gmail.com">gmail.com</option>
+                            <option value="daum.net">daum.net</option>
+                            <option value="kakao.com">kakao.com</option>
+                        </datalist>
+
+                        <button class="btn-verify" id="emailBtn" onclick="sendAuth()" style="padding: 0 10px;">인증</button>
+                    </div>
+                </div>
+                <input type="hidden" id="joinEmail">
+
+                <div id="authArea" class="auth-code-area">
+                    <span class="form-label" style="margin-bottom:5px;">인증번호 입력</span>
+                    <div style="position:relative; display: flex; gap: 8px;">
+                        <div style="flex:1; position: relative;">
+                            <input type="text" id="authNum" class="form-input" placeholder="숫자 입력">
+                            <span class="timer" id="timerDisplay">03:00</span>
+                        </div>
+                        <button class="btn-verify" style="background:var(--success);" onclick="confirmAuth()">확인</button>
+                    </div>
+                    <div id="authSuccessMsg" class="auth-success-msg">✓ 이메일 인증이 완료되었습니다.</div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <span class="form-label">비밀번호</span>
+                <input type="password" id="joinPw" class="form-input" placeholder="8자 이상 영문, 숫자, 특수문자 조합" oninput="checkPw()">
+            </div>
+
+            <div class="form-group">
+                <span class="form-label">비밀번호 확인 (2차 입력)</span>
+                <input type="password" id="joinPwConfirm" class="form-input" placeholder="비밀번호를 한번 더 입력하세요" oninput="checkPw()">
+                <div id="pwCheckMsg" class="pw-msg">✓ 비밀번호가 일치합니다.</div>
+            </div>
+
+            <div class="form-group">
+                <span class="form-label">관심 지역 설정</span>
+                <select id="joinRegion" class="form-input">
+                    <option value="">자치구 선택</option>
+                    <option>강남구</option><option>강동구</option><option>강북구</option><option>강서구</option>
+                    <option>관악구</option><option>광진구</option><option>구로구</option><option>금천구</option>
+                    <option>노원구</option><option>도봉구</option><option>동대문구</option><option>동작구</option>
+                    <option>마포구</option><option>서대문구</option><option>서초구</option><option>성동구</option>
+                    <option>성북구</option><option>송파구</option><option>양천구</option><option>영등포구</option>
+                    <option>용산구</option><option>은평구</option><option>종로구</option><option>중구</option>
+                    <option>중랑구</option>
+                </select>
+            </div>
+
+            <button class="join-btn" onclick="validateJoin()">가입 완료</button>
+        </div>
+    </div>
+
+
+{% include 'footer.html' %}
+
+<button id="btn-back-to-top" title="맨 위로 가기">↑</button>
+<script>
+    let isEmailVerified = false;
+    let timerInterval;
+
+    // 1. 요소들이 로드된 후 이벤트 리스너 등록 (가장 안전한 방법)
+    window.onload = function() {
+        const emailId = document.getElementById('emailId');
+        const emailDomain = document.getElementById('emailDomain');
+
+        if(emailId && emailDomain) {
+            emailId.addEventListener('input', updateFullEmail);
+            emailDomain.addEventListener('input', updateFullEmail);
+        }
+    };
+
+    // 2. 이메일 합치기 함수
+    function updateFullEmail() {
+        const id = document.getElementById('emailId').value;
+        const domain = document.getElementById('emailDomain').value;
+        document.getElementById('joinEmail').value = id + "@" + domain;
+    }
+
+    // 3. 타이머 함수 (중복 호출 방지 로직 포함)
+    function startTimer() {
+        let timeLeft = 180;
+        const display = document.getElementById('timerDisplay');
+
+        // 기존 타이머 확실히 제거
+        if (timerInterval) {
+            clearInterval(timerInterval);
+        }
+
+        timerInterval = setInterval(function () {
+            let minutes = parseInt(timeLeft / 60, 10);
+            let seconds = parseInt(timeLeft % 60, 10);
+
+            minutes = minutes < 10 ? "0" + minutes : minutes;
+            seconds = seconds < 10 ? "0" + seconds : seconds;
+
+            display.textContent = minutes + ":" + seconds;
+
+            if (--timeLeft < 0) {
+                clearInterval(timerInterval);
+                display.textContent = "시간만료";
+                alert("인증 시간이 만료되었습니다. 다시 요청해주세요.");
+            }
+        }, 1000);
+    }
+
+    // 4. 인증번호 발송
+    function sendAuth() {
+        // 발송 전 최종 합체
+        updateFullEmail();
+        const email = document.getElementById('joinEmail').value;
+
+        if(!document.getElementById('emailId').value || !document.getElementById('emailDomain').value) {
+            alert("이메일 주소를 완성해주세요.");
+            return;
+        }
+
+        fetch("/send_auth_email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: email })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                alert("이메일로 인증번호가 발송되었습니다.");
+                document.getElementById('authArea').style.display = 'block';
+                startTimer(); // 여기서 타이머 시작
+            } else {
+                alert("발송 실패: " + data.message);
+            }
+        })
+        .catch(err => {
+            console.error("Error:", err);
+            alert("서버와 통신 중 오류가 발생했습니다.");
+        });
+    }
+
+    // 5. 인증번호 확인
+    function confirmAuth() {
+        const email = document.getElementById('joinEmail').value;
+        const authNum = document.getElementById('authNum').value;
+
+        fetch("/verify_code", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: email, code: authNum })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                alert("이메일 인증이 완료되었습니다.");
+                isEmailVerified = true;
+                clearInterval(timerInterval); // 인증 성공 시 타이머 멈춤
+                document.getElementById('authNum').disabled = true;
+                document.getElementById('emailId').readOnly = true;
+                document.getElementById('emailDomain').readOnly = true;
+                document.getElementById('authSuccessMsg').style.display = 'block';
+            } else {
+                alert("인증번호가 틀렸습니다.");
+            }
+        });
+    }
+
+    function checkPw() {
+        const pw = document.getElementById('joinPw').value;
+        const confirm = document.getElementById('joinPwConfirm').value;
+        const msg = document.getElementById('pwCheckMsg');
+        msg.style.display = (pw && confirm && pw === confirm) ? 'block' : 'none';
+    }
+
+    function validateJoin() {
+        const name = document.getElementById('joinName').value;
+        const id = document.getElementById('joinId').value;
+        const email = document.getElementById('joinEmail').value;
+        const pw = document.getElementById('joinPw').value;
+        const confirm = document.getElementById('joinPwConfirm').value;
+        const region = document.getElementById('joinRegion').value;
+        const pwRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/;
+
+        if(!name) { alert("이름을 입력해주세요."); return; }
+        if(!id) { alert("아이디를 입력해주세요."); return; }
+        if(!isEmailVerified) { alert("이메일 인증을 완료해주세요."); return; }
+        if(!pwRegex.test(pw)) { alert("비밀번호는 8자 이상이며, 영문, 숫자, 특수문자를 포함해야 합니다."); return; }
+        if(pw !== confirm) { alert("비밀번호가 일치하지 않습니다."); return; }
+        if(!region) { alert("관심 지역을 선택해주세요."); return; }
+
+        fetch("{{ url_for('auth.signup_process') }}", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                name: name,
+                user_id: id,
+                email: email,
+                password: pw,
+                region: region
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                alert(name + "님, 가입을 축하합니다!");
+                location.href = "{{ url_for('main.index') }}"; // 가입 후 로그인 페이지로 이동
+            } else {
+                alert("가입 실패: " + data.message);
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("서버 통신 오류가 발생했습니다.");
+        });
+    }
+
+    document.getElementById('btn-back-to-top').addEventListener('click', function() {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    });
+</script>
+
+</body>
+</html>

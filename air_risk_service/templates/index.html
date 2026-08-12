@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>서울시 AI 미세먼지 보건 분석 시스템</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+
+    <style>
+    :root {
+        --danger:#ed1c24; --warning:#ff7f27; --normal:#ffc90e; --safe:#22b14c;
+        --bg:#f4f7fa; --card-bg:#ffffff;
+    }
+
+    /* [1] 초기화 */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body, html {
+        width: 100%; height: 100%;
+        font-family: 'Pretendard', -apple-system, sans-serif;
+        overflow: hidden;
+    }
+
+    /* [2] 스크롤 컨테이너 */
+    .wrapper {
+        width: 100%; height: 100vh;
+        overflow-y: auto;
+        scroll-behavior: smooth;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* [3] 헤더 본체: 배경은 꽉 차있지만 내부 요소는 여백을 가짐 */
+    header {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+
+        /* ★ 이 수치가 서브와 동일해야 작게 안 느껴집니다 */
+        width: calc(100vw - 20px);
+        max-width: 1580px;
+
+        height: 60px;
+        z-index: 10000;
+        background: #fff;
+        padding: 0 25px;
+        border-radius: 14px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+        transition: all 0.3s ease-in-out;
+    }
+
+    header:hover {
+            border-radius: 14px 14px 0 0; /* 위쪽만 둥글게, 아래쪽(왼쪽/오른쪽)은 0 */
+            background: #fff !important;
+        }
+
+    /* 로고 영역 */
+    .logo-area { display: flex; align-items: center; gap: 10px; font-weight: 900; font-size: 1.1rem; cursor: pointer; transition: color 0.3s; }
+    .logo-circle { width: 10px; height: 10px; background: var(--danger); border-radius: 50%; }
+
+    /* 상단 메뉴 (GNB) */
+    .main-menu {
+        display: flex;
+        list-style: none;
+        gap: 100px; /* 메가 메뉴 column gap과 일치시킴 */
+    }
+    .menu-item {
+        width: 150px; /* 대주제 글자 영역 너비 고정 */
+        text-align: center;
+    }
+    .menu-link {
+        text-decoration: none;
+        font-weight: 800;
+        font-size: 1.1rem;
+        transition: color 0.3s;
+        color: #333;
+    }
+
+    /* [4] 메가 메뉴 스타일: 헤더 가로폭(1600px) 내에서만 작동 */
+    .mega-menu-wrapper {
+        position: absolute;
+        top: 60px;
+        left: 0;
+        width: 100%;
+        background: #fff;
+        box-shadow: 0 15px 30px rgba(0,0,0,0.08);
+        border-top: 1px solid #f4f4f4;
+        height: 0;
+        overflow: hidden;
+        transition: all 0.3s ease-in-out;
+        visibility: hidden;
+        z-index: 9999 !important;
+        border-radius: 0 0 14px 14px;
+
+        /* ★ 수정: 메뉴 뭉치를 서브처럼 오른쪽 끝으로 밀기 */
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    /* 헤더에 마우스 올리면 메가메뉴 등장 */
+    header:hover .mega-menu-wrapper {
+        height: 200px; /* 250px에서 200px로 수정 (서브와 동일) */
+        visibility: visible;
+    }
+
+    /* 메가메뉴 내부 정렬 */
+    .mega-content {
+        display: flex;
+        /* ★ 수정: 내부 아이템들은 왼쪽부터 나열 (서브와 동일) */
+        justify-content: flex-start;
+        gap: 100px;
+        padding: 35px 0;
+        margin-right: 25px; /* 헤더 우측 여백과 맞춤 */
+        box-sizing: border-box;
+        width: auto;        /* 100%에서 auto로 변경 */
+    }
+
+    .mega-column {
+        width: 150px;              /* 상단 .menu-item 너비와 일치 */
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        align-items: center;
+    }
+
+    .mega-column a {
+        text-decoration: none; color: #666; font-size: 0.95rem;
+        font-weight: 700; transition: 0.2s; width: 100%; text-align: center;
+    }
+
+    .mega-column a:hover {
+        color: var(--danger); background: #fff5f5; border-radius: 8px;
+    }
+
+    .mega-banner {
+        position: relative; /* absolute 해제 */
+        margin-right: 0;
+        left: -200px;       /* 서브 페이지와 동일한 위치값 */
+        width: 550px;       /* 서브 페이지 배너 너비 550px로 일치 */
+        height: auto;
+        border-radius: 12px;
+        overflow: hidden;
+        background: #eee;
+        margin-left: 0;     /* 기존 25px 제거 */
+    }
+    .mega-banner img { width: 100%; height: 100%; object-fit: cover; }
+    .mega-banner::after {
+        content: ''; position: absolute; top: 0; left: 0;
+        width: 100%; height: 100%; background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);
+    }
+    .banner-text {
+        position: absolute; bottom: 20px; left: 20px; z-index: 2; color: #fff; text-align: left;
+    }
+    .banner-text h3 { font-size: 1.3rem; margin-bottom: 5px; font-weight: 800; }
+    .banner-text p { font-size: 0.85rem; opacity: 0.9; }
+
+
+    /* [5] 메인 페이지 전용 효과 (투명도 및 숨김 애니메이션) */
+        header.on-hero:not(:hover) {
+            background: transparent !important;
+            box-shadow: none !important;
+        }
+
+        /* ★ 추가/수정: 헤더에 마우스 올리면 무조건 흰색 배경 */
+        header:hover {
+            background: #fff !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
+        }
+
+        header.on-hero:not(:hover) .logo-area,
+        header.on-hero:not(:hover) .menu-link {
+            color: #fff !important;
+        }
+
+
+
+        /* 호버 시 글자색 검은색으로 변경 */
+        header:hover .logo-area,
+        header:hover .menu-link {
+            color: #333 !important;
+        }
+
+        header.hide {
+            transform: translate(-50%, -150%);
+            opacity: 0;
+        }
+
+    /* [6] 섹션 및 기타 레이아웃 */
+    section {
+        width: 100%; height: 100vh;
+        display: flex; flex-direction: column; justify-content: center; align-items: center;
+        text-align: center;
+        padding: 0 20px;
+    }
+
+    .swiper.hero-swiper {
+        width: 100%;
+        height: 100vh; /* 화면 꽉 차게 */
+        z-index: 1; /* 헤더보다 아래 */
+    }
+
+    .swiper-slide.hero-slide {
+        width: 100%;
+        height: 100%;
+        background-repeat: no-repeat;
+        background-position: center center;
+        background-size: cover;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+    }
+
+    .hero-content {
+        padding: 0 20px;
+        z-index: 2;
+    }
+
+    .hero-content h1 {
+        font-size: 4rem;
+        font-weight: 900;
+        color: #fff;
+        margin-bottom: 25px;
+        text-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+    .hero-content h1 span { color: var(--danger); }
+    .hero-content p {
+        font-size: 1.5rem;
+        color: #f0f0f0;
+        margin-bottom: 50px;
+        max-width: 800px;
+        text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    /* 양옆 버튼 디자인 수정 */
+    .hero-swiper .swiper-button-next,
+    .hero-swiper .swiper-button-prev {
+        color: rgba(255,255,255,0.6) !important; /* 버튼 색상 흰색 투명하게 */
+        transition: all 0.3s;
+    }
+    .hero-swiper .swiper-button-next:hover,
+    .hero-swiper .swiper-button-prev:hover {
+        color: #fff !important; /* 마우스 올리면 선명하게 */
+        transform: scale(1.1);
+    }
+
+    .cta-btn {
+        padding: 20px 60px; background: var(--danger); color: #fff;
+        text-decoration: none; border-radius: 50px; font-size: 1.3rem; font-weight: 800;
+        transition: 0.3s; box-shadow: 0 10px 30px rgba(237, 28, 36, 0.4);
+    }
+    .cta-btn:hover { background: #fff; color: var(--danger); transform: translateY(-5px); }
+
+    /* [6] 기능 소개 섹션 - 카드 디자인 대폭 강화 */
+    .features-section {
+        background: #000; /* 전체 배경 어둡게 */
+        padding: 0 !important; /* 여백 제거 */
+    }
+
+    .features-grid {
+        display: flex;
+        width: 100%;
+        height: 100vh; /* 화면 꽉 차게 */
+        gap: 0; /* 카드 사이 간격 제거 (이미지 연결 느낌) */
+    }
+
+    .feature-card {
+        flex: 1;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end; /* 텍스트를 아래쪽으로 */
+        padding: 80px 40px;
+        color: #fff;
+        text-align: left; /* 왼쪽 정렬로 가독성 향상 */
+        transition: all 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+        overflow: hidden;
+        border-right: 1px solid rgba(255,255,255,0.1);
+        text-decoration: none;
+    }
+
+    /* 카드별 배경 이미지 설정 */
+    .feature-card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background-size: cover;
+        background-position: center;
+        transition: transform 0.8s ease;
+        z-index: 1;
+        filter: brightness(0.6) blur(1px);
+    }
+
+    /* 카드별 이미지 경로 (이미지 파일명에 맞게 수정하세요) */
+    .card-1::before { background-image: linear-gradient(to top, rgba(0,0,0,0.8), transparent), url('/static/카드1.jpg'); }
+    .card-2::before { background-image: linear-gradient(to top, rgba(0,0,0,0.8), transparent), url('/static/카드2.png'); }
+    .card-3::before { background-image: linear-gradient(to top, rgba(0,0,0,0.8), transparent), url('/static/서울사진7.png'); }
+
+    /* 호버 효과 */
+    .feature-card:hover { flex: 1.5; } /* 호버 시 넓어짐 */
+    .feature-card:hover::before { transform: scale(1.1); filter: brightness(0.8); }
+
+    /* 카드 내 텍스트 컨텐츠 */
+    .feature-card .content-box {
+        position: relative;
+        z-index: 2;
+        width: 100%;
+        /* pointer-events: none; 제거 */
+    }
+
+    .icon-box {
+        font-size: 3rem;
+        margin-bottom: 20px;
+        display: inline-block;
+        opacity: 0.8;
+    }
+
+    .feature-card h3, .feature-card p {
+        text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+
+    .feature-card p {
+        font-size: 1rem;
+        line-height: 1.6;
+        opacity: 0.7;
+        max-width: 300px;
+    }
+
+    /* 버튼 스타일 */
+    .more-btn {
+        margin-top: 30px;
+        padding: 10px 25px;
+        border: 1px solid #fff;
+        display: inline-block;
+        color: #fff;
+        text-decoration: none; /* 밑줄 제거 */
+        font-size: 0.9rem;
+        transition: 0.3s;
+        cursor: pointer;      /* 마우스 포인터 모양 변경 */
+        position: relative;    /* 층수 보장 */
+        z-index: 3;           /* 가장 위로 올림 */
+    }
+    .feature-card:hover .more-btn { background: #fff; color: #000; }
+
+    .site-footer {
+    background-color: #1a1c1e;
+    color: #fff;
+    padding: 30px 0 25px;
+    width: 100%;
+}
+
+.footer-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 25px;
+}
+
+/* 상단 메뉴 영역 - 중앙 정렬로 변경 */
+.footer-top {
+    border-bottom: 1px solid #2a2c2e;
+    padding-bottom: 20px;
+    margin-bottom: 20px;
+}
+
+.footer-top .footer-inner {
+    display: flex;
+    justify-content: center; /* 왼쪽 정렬에서 가운데 정렬로 변경 */
+    gap: 80px;               /* 컬럼 사이 간격을 적절히 조정 */
+    text-align: center;      /* 메뉴 텍스트들도 중앙 정렬 */
+}
+
+.footer-column {
+    min-width: 150px;        /* 중앙 정렬 시 균형을 위해 최소 폭 설정 */
+}
+
+.footer-column h4 {
+    font-size: 0.85rem;
+    font-weight: 800;
+    margin-bottom: 12px;
+    color: #eee;
+}
+
+.footer-column ul { list-style: none; padding: 0; margin: 0; }
+.footer-column ul li { margin-bottom: 6px; }
+.footer-column ul li a {
+    color: #777;
+    text-decoration: none;
+    font-size: 0.8rem;
+    transition: 0.2s;
+}
+.footer-column ul li a:hover { color: #fff; }
+
+/* 하단 정보 영역 - 중앙 정렬 */
+.footer-bottom {
+    text-align: center;
+}
+
+.footer-logo-text {
+    font-size: 0.95rem;
+    font-weight: 900;
+    margin-bottom: 8px;
+    color: #ddd;
+}
+
+.legal-links { margin-bottom: 8px; font-size: 0.75rem; }
+.address {
+    font-size: 0.75rem;
+    color: #555;
+    line-height: 1.5;
+    margin: 0;
+}
+
+/* Top 버튼 (우측 고정 유지) */
+#btn-back-to-top {
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    width: 40px;
+    height: 40px;
+    background: #333;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    z-index: 1000;
+    transition: 0.3s;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+#btn-back-to-top:hover {
+    background: #ed1c24;
+    transform: translateY(-3px);
+}
+
+    @media (max-width: 1000px) {
+        .hero h1 { font-size: 2.8rem; }
+        .features-grid { flex-direction: column; }
+        .mega-banner { display: none; }
+    }
+</style>
+</head>
+<body>
+
+<div class="wrapper" id="scroll-wrapper">
+    <header id="main-header" class="on-hero">
+        <div class="logo-area" onclick="location.href='{{ url_for('main.index')}}'">
+            <div class="logo-circle"></div>서울시 AI 미세먼지 보건 분석 시스템
+        </div>
+
+        <nav class="nav-area">
+            <ul class="main-menu">
+                <li class="menu-item"><a href="{{ url_for('main.dashboard') }}" class="menu-link">실시간 분석 지도</a></li>
+                <li class="menu-item"><a href="{{ url_for('main.analysis') }}" class="menu-link">지역별 상세 분석</a></li>
+                {% if session.get('user_id') %}
+                    <li class="menu-item"><a href="{{ url_for('auth.mypage') }}" class="menu-link login-btn">{{ session.get('user_name') }} 님</a></li>
+                {% else %}
+                    <li class="menu-item"><a href="{{ url_for('auth.login') }}" class="menu-link login-btn">로그인</a></li>
+                {% endif %}
+            </ul>
+
+            <div class="mega-menu-wrapper">
+                <div class="mega-content">
+                    <div class="mega-banner">
+                        <div class="banner-text">
+                            <h3>서울시 보건 예보</h3>
+                            <p>AI 분석 기반 실시간 미세먼지<br>지표와 보건 가이드를 제공합니다.</p>
+                        </div>
+                        <img src="{{ url_for('static', filename='서울사진.jpg') }}" alt="Menu Banner">
+                    </div>
+
+                    <div class="mega-column">
+                        <a href="{{ url_for('main.dashboard') }}">종합 보건 위험 등급</a>
+                        <a href="{{ url_for('main.dashboard', type='pm10') }}">미세먼지 (PM10)</a>
+                        <a href="{{ url_for('main.dashboard', type='pm25') }}">초미세먼지 (PM2.5)</a>
+                    </div>
+                    <div class="mega-column">
+                        <a href="{{ url_for('main.analysis') }}">자치구별 분석 리포트</a>
+                        <a href="{{ url_for('main.comparison_view') }}">통계 데이터 비교</a>
+                        <a href="{{ url_for('mask.mask_control') }}">AI 실시간 관제 시스템</a>
+                        <a href="{{ url_for('chatbot.chatbot') }}">실시간 AI질문</a>
+                    </div>
+                    <div class="mega-column">
+                        {% if session.get('user_id') %}
+                            <a href="{{ url_for('auth.mypage') }}">마이페이지</a>
+                            <a href="{{ url_for('auth.logout') }}">로그아웃</a>
+                        {% else %}
+                            <a href="{{ url_for('auth.login') }}">로그인</a>
+                            <a href="{{ url_for('auth.signup') }}">회원가입</a>
+                            <a href="{{ url_for('auth.find_account') }}">ID / PW 찾기</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <div class="swiper hero-swiper" id="hero-section">
+        <div class="swiper-wrapper">
+
+            <div class="swiper-slide hero-slide" style="background-image: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('{{ url_for('static', filename='서울사진2.png') }}');">
+                <div class="hero-content">
+                    <h1>AI가 예측하는 서울시<br><span>실시간 보건 위험도</span></h1>
+                    <p>10년치 대기 오염 데이터와 지역 특성을 학습한 AI 모델이 자치구별 <br>미세먼지 수치에 따른 위험을 실시간으로 분석합니다.</p>
+                    <a href="{{ url_for('main.dashboard') }}" class="cta-btn">실시간 분석 지도로 이동하기</a>
+                </div>
+            </div>
+
+            <div class="swiper-slide hero-slide" style="background-image: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('{{ url_for('static', filename='서울사진3.png') }}');">
+                <div class="hero-content">
+                    <h1>인구 구조와 산업 비중을 결합한<br><span>자치구별 보건 리포트</span></h1>
+                    <p>단순 농도를 넘어 거주 인구수 대비 <strong>호흡기 질환 내원 환자 수</strong>를 예측하고,<br>제조업·보건복지 등 지역별 산업 특성에 맞춘 상세 분석 의견을 제공합니다.</p>
+                    <a href="{{ url_for('main.analysis') }}" class="cta-btn">지역 상세 리포트 보기</a>
+                </div>
+            </div>
+
+            <div class="swiper-slide hero-slide" style="background-image: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('{{ url_for('static', filename='서울사진4.png') }}');">
+                <div class="hero-content">
+                    <h1>서로 다른 지역의 보건 지표를<br><span>한눈에 대조하고 비교분석</span></h1>
+                    <p>선택한 두 자치구의 72시간 오염 농도 추이와 AI 분석 결과를 직접 비교해 보세요.<br>어느 지역이 우리 가족 건강에 더 적합한 환경인지 데이터로 증명합니다.</p>
+                    <a href="{{ url_for('main.comparison_view') }}" class="cta-btn">지역별 데이터 비교하기</a>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="swiper-button-next"></div>
+        <div class="swiper-button-prev"></div>
+    </div>
+
+    <section class="features-section" id="feat-section">
+    <div class="features-grid">
+        <div class="feature-card card-1">
+            <div class="content-box">
+                <div class="icon-box">🗺️</div>
+                <h3>상세 대시보드</h3>
+                <p>지도를 통해 서울시 25개 자치구의 <br>미세먼지 수치를 한눈에 확인하세요.</p>
+                <a href="{{ url_for('main.dashboard') }}" class="more-btn">자세히 보기</a>
+            </div>
+        </div>
+
+        <div class="feature-card card-2">
+            <div class="content-box">
+                <div class="icon-box">🧠️</div>
+                <h3>지역별 분석</h3>
+                <p>지역별 인구 구조와 환경 요인을 결합해 <br>AI 맞춤형 보건 리포트를 확인하세요.</p>
+                <a href="{{ url_for('main.analysis') }}" class="more-btn">자세히 보기</a>
+            </div>
+        </div>
+
+        <div class="feature-card card-3">
+            <div class="content-box">
+                <div class="icon-box">📊</div>
+                <h3>통계 데이터 비교</h3>
+                <p>여러 지역의 미세먼지 추이와 보건 지표를 <br>한 그래프에서 직접 대조하고 분석해 보세요.</p>
+                <a href="{{ url_for('main.comparison_view') }}" class="more-btn">자세히 보기</a>
+            </div>
+        </div>
+    </div>
+</section>
+{% include 'footer.html' %}
+
+<button id="btn-back-to-top" title="맨 위로 가기">↑</button>
+</div>
+
+<script>
+    const wrapper = document.getElementById('scroll-wrapper');
+    const sections = [document.getElementById('hero-section'), document.getElementById('feat-section')];
+    const header = document.getElementById('main-header');
+
+    let currentIdx = 0;
+    let isScrolling = false;
+
+    function updateHeaderStyle() {
+        if (header.classList.contains('hide') || isScrolling) return;
+
+        if (currentIdx === 0) {
+            header.classList.add('on-hero');
+            header.style.background = "transparent";
+            header.style.boxShadow = "none";
+        } else {
+            header.classList.remove('on-hero');
+            header.style.background = "#fff";
+            header.style.boxShadow = "0 4px 12px rgba(0,0,0,0.08)";
+        }
+    }
+
+    function scrollToSection(index) {
+        isScrolling = true;
+
+        // 첫 화면(index 0)이 아니면 헤더를 즉시 숨깁니다.
+        if (index > 0) {
+            header.classList.add('hide');
+        } else {
+            header.classList.remove('hide');
+        }
+
+        const targetPos = sections[index].offsetTop;
+        wrapper.scrollTo({
+            top: targetPos,
+            behavior: 'smooth'
+        });
+
+        setTimeout(() => {
+            isScrolling = false;
+            updateHeaderStyle();
+        }, 800);
+    }
+
+    wrapper.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        if (isScrolling) return;
+
+        if (e.deltaY > 0) {
+            if (currentIdx < sections.length - 1) {
+                currentIdx++;
+                scrollToSection(currentIdx); // scrollToSection 함수가 알아서 숨겨줍니다.
+            } else {
+                header.classList.add('hide');
+                wrapper.scrollTo({ top: wrapper.scrollHeight, behavior: 'smooth' });
+            }
+        } else {
+            if (wrapper.scrollTop > sections[sections.length - 1].offsetTop + 50) {
+                currentIdx = sections.length - 1;
+                scrollToSection(currentIdx);
+            } else if (currentIdx > 0) {
+                currentIdx--;
+                if (currentIdx === 0) {
+                    header.classList.remove('hide');
+                }
+                scrollToSection(currentIdx);
+            }
+        }
+    }, { passive: false });
+
+    const swiper = new Swiper('.hero-swiper', {
+        loop: true, // 무한 반복
+        autoplay: {
+            delay: 5000, // 5초마다 자동 넘김
+            disableOnInteraction: false, // 마우스로 조작해도 자동 넘김 유지
+        },
+        speed: 800, // 넘어가 속도 (ms)
+
+        // 양옆 이동 버튼 설정
+        navigation: {
+            nextEl: '.swiper-button-next',
+            prevEl: '.swiper-button-prev',
+        },
+    });
+
+    document.getElementById('btn-back-to-top').addEventListener('click', function() {
+        // 1. 현재 섹션 인덱스를 첫 번째(Hero)로 초기화
+        currentIdx = 0;
+
+        // 2. 헤더 숨김 해제 및 스타일 업데이트
+        header.classList.remove('hide');
+        updateHeaderStyle();
+
+        // 3. 실제 스크롤이 일어나는 'wrapper' 컨테이너를 맨 위로 올림
+        wrapper.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    });
+
+    updateHeaderStyle();
+
+
+</script>
+
+</body>
+</html>

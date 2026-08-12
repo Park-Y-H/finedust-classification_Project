@@ -1,0 +1,78 @@
+<div class="wrapper">
+    <header>
+        <div class="logo-area" onclick="location.href='{{ url_for('main.index')}}'">
+            <div class="logo-circle"></div>서울시 AI 미세먼지 보건 분석 시스템
+        </div>
+
+        <nav class="nav-area">
+        <ul class="main-menu">
+            <li class="menu-item">
+                <a href="{{ url_for('main.dashboard') }}"
+                   class="menu-link"
+                   style="{% if request.endpoint == 'main.dashboard' %}color:var(--danger); font-weight:bold;{% endif %}">
+                   실시간 분석 지도
+                </a>
+            </li>
+
+            <li class="menu-item">
+                <a href="{{ url_for('main.analysis') }}"
+                   class="menu-link"
+                   style="{% if request.endpoint == 'main.analysis' or request.endpoint == 'main.comparison_view' or request.endpoint == 'mask.mask_control' or request.endpoint == 'chatbot.chatbot' %}color:var(--danger); font-weight:bold;{% endif %}">
+                   지역별 상세 분석
+                </a>
+            </li>
+
+            {% if session.get('user_id') %}
+                <li class="menu-item">
+                    <a href="{{ url_for('auth.mypage') }}"
+                       class="menu-link"
+                       style="{% if request.endpoint == 'auth.mypage' %}color:var(--danger); font-weight:bold;{% endif %}">
+                        {{ session.get('user_name') }} 님
+                    </a>
+                </li>
+            {% else %}
+                <li class="menu-item">
+                    <a href="{{ url_for('auth.login') }}"
+                       class="menu-link"
+                       style="{% if request.endpoint == 'auth.login' or request.endpoint == 'auth.signup' or request.endpoint == 'auth.find_account' %}color:var(--danger); font-weight:bold;{% endif %}">
+                       로그인
+                    </a>
+                </li>
+            {% endif %}
+        </ul>
+
+        <div class="mega-menu-wrapper">
+            <div class="mega-content">
+                <div class="mega-banner">
+                <div class="banner-text">
+                    <h3>서울시 보건 예보</h3>
+                    <p>AI 분석 기반 실시간 미세먼지<br>지표와 보건 가이드를 제공합니다.</p>
+                </div>
+                <img src="{{ url_for('static', filename='서울사진.jpg') }}" alt="Menu Banner">
+            </div>
+
+                <div class="mega-column">
+                    <a href="{{ url_for('main.dashboard') }}">종합 보건 위험 등급</a>
+                    <a href="{{ url_for('main.dashboard', type='pm10') }}">미세먼지 (PM10)</a>
+                    <a href="{{ url_for('main.dashboard', type='pm25') }}">초미세먼지 (PM2.5)</a>
+                </div>
+                <div class="mega-column">
+                    <a href="{{ url_for('main.analysis') }}">자치구별 분석 리포트</a>
+                    <a href="{{ url_for('main.comparison_view') }}">통계 데이터 비교</a>
+                    <a href="{{ url_for('mask.mask_control') }}">AI 실시간 관제 시스템</a>
+                    <a href="{{ url_for('chatbot.chatbot') }}">실시간 AI질문</a>
+                </div>
+                <div class="mega-column">
+                    {% if session.get('user_id') %}
+                        <a href="{{ url_for('auth.mypage') }}">마이페이지</a>
+                        <a href="{{ url_for('auth.logout') }}">로그아웃</a>
+                    {% else %}
+                        <a href="{{ url_for('auth.login') }}">로그인</a>
+                        <a href="{{ url_for('auth.signup') }}">회원가입</a>
+                        <a href="{{ url_for('auth.find_account') }}">ID / PW 찾기</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+    </header>

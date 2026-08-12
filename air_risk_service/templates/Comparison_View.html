@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>데이터 비교 분석 | 서울시 AI 시스템</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { background-color: #f4f7fa; margin: 0; padding: 0; overflow-y: auto !important; height: auto !important; }
+        .comp-container { width: 100%; max-width: 1600px; margin: 0 auto; padding: 40px 25px 100px; box-sizing: border-box; }
+
+        .page-header { text-align: center; margin-bottom: 40px; }
+        .page-header h2 { font-size: 2.2rem; font-weight: 900; color: #111; margin: 0; }
+        .page-header p { color: #666; font-weight: 600; margin-top: 10px; }
+
+        .comparison-wrapper { display: grid; grid-template-columns: 1fr 120px 1fr; gap: 20px; align-items: start; }
+
+        .district-card { background: #fff; border-radius: 24px; padding: 35px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); transition: 0.3s; }
+        .district-card.left { border-top: 8px solid #ed1c24; }
+        .district-card.right { border-top: 8px solid #333; }
+
+        .select-box {
+            width: 100%; padding: 15px 25px; border-radius: 30px; border: 2px solid #eee;
+            font-size: 1.2rem; font-weight: 800; margin-bottom: 25px; cursor: pointer; background: #fff;
+        }
+
+        /* 지표 스타일 (4개 격자로 확장) */
+        .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .metric-box { background: #f8f9fa; padding: 18px; border-radius: 18px; text-align: center; border: 1px solid #f0f2f5; }
+        .metric-box.main { grid-column: span 1; padding: 22px; }
+        .metric-box .label { font-size: 0.75rem; color: #888; font-weight: 800; margin-bottom: 5px; display: block; }
+        .metric-box .value { font-size: 1.6rem; font-weight: 900; color: #111; }
+        .metric-box .unit { font-size: 0.8rem; color: #aaa; font-weight: 600; }
+
+        .vs-badge { display: flex; align-items: center; justify-content: center; height: 100%; font-size: 2.5rem; font-weight: 900; color: #e0e0e0; font-style: italic; }
+
+        .chart-section { grid-column: span 3; background: #fff; border-radius: 24px; padding: 25px; margin-top: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
+
+        .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; height: 300px !important; }
+        .chart-grid > div { position: relative; width: 100%; height: 100%; overflow: hidden; }
+        canvas { max-height: 250px !important; width: 100% !important; }
+
+        .ai-compare-row { grid-column: span 3; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
+        .ai-box { background: #1a1c1e; color: #fff; padding: 25px; border-radius: 20px; font-size: 0.95rem; line-height: 1.7; }
+        .ai-box h4 { margin: 0 0 12px 0; color: #ed1c24; font-size: 0.85rem; font-weight: 900; }
+
+        @media (max-width: 1100px) {
+            .comparison-wrapper { grid-template-columns: 1fr; }
+            .chart-grid { grid-template-columns: 1fr; height: auto !important; }
+        }
+    </style>
+</head>
+<body>
+
+{% include 'header.html' %}
+
+    <div class="comp-container">
+        <div class="page-header">
+            <h2>자치구 데이터 비교 분석 <span style="color:#ed1c24;">VS</span></h2>
+            <p>실시간 대기오염 물질 및 산업 구조를 비교합니다.</p>
+        </div>
+
+        <div class="comparison-wrapper">
+            <div class="district-card left">
+                <select id="select-1" class="select-box">
+                    {% for gu in districts %}
+                    <option value="{{ gu }}" {% if loop.index == 1 %}selected{% endif %}>{{ gu }}</option>
+                    {% endfor %}
+                </select>
+                <div class="metric-grid">
+                    <div class="metric-box main">
+                        <span class="label">미세먼지(PM10)</span>
+                        <div class="value" id="pm10-1">-</div>
+                    </div>
+                    <div class="metric-box main">
+                        <span class="label">초미세(PM2.5)</span>
+                        <div class="value" id="pm25-1">-</div>
+                    </div>
+                    <div class="metric-box">
+                        <span class="label">오존(O₃)</span>
+                        <div class="value" id="o3-1" style="font-size:1.2rem;">-</div>
+                    </div>
+                    <div class="metric-box">
+                        <span class="label">이산화질소(NO₂)</span>
+                        <div class="value" id="no2-1" style="font-size:1.2rem;">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="vs-badge">VS</div>
+
+            <div class="district-card right">
+                <select id="select-2" class="select-box">
+                    {% for gu in districts %}
+                    <option value="{{ gu }}" {% if loop.index == 2 %}selected{% endif %}>{{ gu }}</option>
+                    {% endfor %}
+                </select>
+                <div class="metric-grid">
+                    <div class="metric-box main">
+                        <span class="label">미세먼지(PM10)</span>
+                        <div class="value" id="pm10-2">-</div>
+                    </div>
+                    <div class="metric-box main">
+                        <span class="label">초미세(PM2.5)</span>
+                        <div class="value" id="pm25-2">-</div>
+                    </div>
+                    <div class="metric-box">
+                        <span class="label">오존(O₃)</span>
+                        <div class="value" id="o3-2" style="font-size:1.2rem;">-</div>
+                    </div>
+                    <div class="metric-box">
+                        <span class="label">이산화질소(NO₂)</span>
+                        <div class="value" id="no2-2" style="font-size:1.2rem;">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-section">
+                <div class="chart-grid">
+                    <div>
+                        <h4 style="margin-bottom:10px;">📊 산업 특성 비교 (%)</h4>
+                        <canvas id="featureChartComp"></canvas>
+                    </div>
+                    <div>
+                        <h4 style="margin-bottom:10px;">📈 72시간 농도 추이 (PM10)</h4>
+                        <canvas id="trendChartComp"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ai-compare-row">
+                <div class="ai-box">
+                    <h4 id="ai-label-1">AI ANALYSIS</h4>
+                    <p id="ai-text-1">데이터 로딩 중...</p>
+                </div>
+                <div class="ai-box">
+                    <h4 id="ai-label-2">AI ANALYSIS</h4>
+                    <p id="ai-text-2">데이터 로딩 중...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% include 'footer.html' %}
+
+<button id="btn-back-to-top" title="맨 위로 가기">↑</button>
+
+<script>
+    const allData = JSON.parse('{{ analysis_data | safe }}');
+    let featureChart, trendChart;
+
+    function getAnalysis(data, guName) {
+    // 1. 보내주신 등급 매핑 정의
+    const statusMap = {
+        '5': { health: "매우 위험", context: "최근 대기 오염 물질이 매우 높게 정체된 상태" },
+        '3': { health: "위험", context: "고농도 오염 물질의 누적으로 주의가 필요한 단계" },
+        '4': { health: "보통", context: "일반적인 대기 수준을 유지하고 있는 상태" },
+        '2': { health: "보통", context: "지역적 특성에 따른 미세한 농도 반응이 관찰되는 단계" },
+        '1': { health: "안전", context: "오염 물질 확산이 원활하며 대기가 깨끗한 상태" },
+        '0': { health: "안전", context: "매우 쾌적하고 안정적인 대기 환경 유지" },
+        '-1': { health: "점검 중", context: "실시간 데이터를 분석하고 있습니다" }
+    };
+
+    if (!data || data.risk === undefined) return `${guName} 분석 데이터 점검 중.`;
+
+    // 2. 해당 데이터의 risk(숫자)에 맞는 정보 가져오기
+    const currentStatus = statusMap[data.risk.toString()] || statusMap['-1'];
+
+    // 3. 산업 특성 텍스트 (기존 로직 유지)
+    let industryContext = (data.manu > data.trans && data.manu > data.health) ? "제조업 중심 공업지구" :
+                          (data.trans > data.manu && data.trans > data.health) ? "교통 요충지" : "보건·복지 밀집 지역";
+
+    return `AI 분석 결과, <strong>${guName}</strong>은(는) <strong>${industryContext}</strong>로서의 특성을 반영하고 있으며,
+            현재 종합 보건 등급은 <strong>'${currentStatus.health}'</strong> 단계입니다. <br>
+            <small style="color:#aaa;">(${currentStatus.context})</small>`;
+}
+
+    function updateComparison() {
+        const gu1 = document.getElementById('select-1').value;
+        const gu2 = document.getElementById('select-2').value;
+        const d1 = allData[gu1] || {};
+        const d2 = allData[gu2] || {};
+
+        // 수치 업데이트 (PM10, PM2.5, O3, NO2)
+        document.getElementById('pm10-1').innerText = d1.pm10 || 0;
+        document.getElementById('pm25-1').innerText = d1.pm25 || 0;
+        document.getElementById('o3-1').innerText = d1.o3 || '-';
+        document.getElementById('no2-1').innerText = d1.no2 || '-';
+
+        document.getElementById('pm10-2').innerText = d2.pm10 || 0;
+        document.getElementById('pm25-2').innerText = d2.pm25 || 0;
+        document.getElementById('o3-2').innerText = d2.o3 || '-';
+        document.getElementById('no2-2').innerText = d2.no2 || '-';
+
+        // AI 텍스트
+        document.getElementById('ai-label-1').innerText = `AI ANALYSIS - ${gu1}`;
+        document.getElementById('ai-label-2').innerText = `AI ANALYSIS - ${gu2}`;
+        document.getElementById('ai-text-1').innerHTML = getAnalysis(d1, gu1);
+        document.getElementById('ai-text-2').innerHTML = getAnalysis(d2, gu2);
+
+        // 차트 업데이트
+        featureChart.data.datasets[0].label = gu1;
+        featureChart.data.datasets[1].label = gu2;
+        featureChart.data.datasets[0].data = [d1.manu||0, d1.trans||0, d1.health||0];
+        featureChart.data.datasets[1].data = [d2.manu||0, d2.trans||0, d2.health||0];
+        featureChart.update();
+
+        trendChart.data.datasets[0].label = gu1;
+        trendChart.data.datasets[1].label = gu2;
+        trendChart.data.datasets[0].data = d1.trend_pm10 || [0,0,0,0];
+        trendChart.data.datasets[1].data = d2.trend_pm10 || [0,0,0,0];
+        trendChart.update();
+    }
+
+    window.onload = () => {
+        const select1 = document.getElementById('select-1');
+        const select2 = document.getElementById('select-2');
+
+        // [1] 세션에 저장된 관심 지역 가져오기
+        const userRegion = "{{ session.get('user_region', '') }}".trim();
+
+        // [2] 관심 지역이 있다면 왼쪽(select-1)의 기본값으로 설정
+        if (userRegion) {
+            for (let i = 0; i < select1.options.length; i++) {
+                const optVal = select1.options[i].value.trim();
+                // '구'가 붙어있거나 떼어져 있는 경우 모두 대응
+                if (optVal === userRegion || optVal === userRegion.replace(/구$/, '') || optVal.replace(/구$/, '') === userRegion) {
+                    select1.selectedIndex = i;
+                    break;
+                }
+            }
+        }
+
+    // [3] 만약 왼쪽과 오른쪽이 같은 지역으로 선택된다면, 오른쪽은 다음 지역으로 변경 (비교를 위해)
+    if (select1.value === select2.value) {
+        select2.selectedIndex = (select1.selectedIndex + 1) % select2.options.length;
+    }
+        // 산업 특성 차트 초기화
+        featureChart = new Chart(document.getElementById('featureChartComp'), {
+            type: 'bar',
+            data: {
+                labels: ['제조업', '교통/운수', '보건복지'],
+                datasets: [
+                    { label: '지역 1', backgroundColor: '#ed1c24', data: [0,0,0], borderRadius: 5 },
+                    { label: '지역 2', backgroundColor: '#333', data: [0,0,0], borderRadius: 5 }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false, aspectRatio: 2,
+                scales: { y: { beginAtZero: true, max: 25, ticks: { callback: v => v + '%' } } }
+            }
+        });
+
+        // 농도 추이 차트 초기화
+        trendChart = new Chart(document.getElementById('trendChartComp'), {
+            type: 'line',
+            data: {
+                labels: ['72h전', '48h전', '24h전', '현재'],
+                datasets: [
+                    { label: '지역 1', borderColor: '#ed1c24', data: [0,0,0,0], tension: 0.4, fill: false },
+                    { label: '지역 2', borderColor: '#333', data: [0,0,0,0], tension: 0.4, fill: false }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, aspectRatio: 2 }
+        });
+
+        updateComparison();
+        select1.onchange = updateComparison;
+        select2.onchange = updateComparison;
+    };
+    document.getElementById('btn-back-to-top').addEventListener('click', function() {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    });
+</script>
+</body>
+</html>

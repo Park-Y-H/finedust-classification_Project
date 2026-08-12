@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>지역별 상세 분석 | 서울시 AI 시스템</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { background-color: #f4f7fa; margin: 0; padding: 0; overflow-y: auto !important; height: auto !important; }
+        .analysis-container { width: 100%; max-width: 1600px; margin: 0 auto; padding: 40px 25px 100px; box-sizing: border-box; }
+
+        /* [1] 타이틀 영역 정렬 수정 */
+        .page-title-area {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding: 0 10px;
+        }
+        .page-title-area h2 { margin: 0; font-weight: 900; color: #333; font-size: 1.8rem; }
+
+        .analysis-top-row { display: flex; align-items: stretch; gap: 20px; margin-top: 10px; }
+
+        /* [2] 좌측 AI 요약 카드 */
+        .ai-summary-card { flex: 0 0 380px; background: #fff; padding: 35px; border-radius: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+        .ai-summary-card h2 { font-size: 2.5rem; font-weight: 900; margin: 0 0 10px 0; color: #111; }
+        .status-badge { display: flex; align-items: center; gap: 10px; font-size: 2rem; font-weight: 900; color: #22b14c; margin-bottom: 30px; }
+        .dot-icon { width: 18px; height: 18px; background: #22b14c; border-radius: 50%; box-shadow: 0 0 10px rgba(34, 177, 76, 0.3); }
+
+        .info-row { background: #f8f9fa; border-radius: 14px; padding: 18px; margin-bottom: 12px; border-left: 6px solid #333; }
+        .info-row.alert { border-left-color: #ed1c24; background: #fff5f5; }
+        .info-row h4 { font-size: 0.85rem; color: #888; margin: 0 0 5px 0; }
+        .info-row p { font-size: 0.95rem; font-weight: 800; margin: 0; color: #222; line-height: 1.4; }
+
+        /* [3] 우측 데이터 섹션 */
+        .metrics-section { flex: 1; display: flex; flex-direction: column; gap: 15px; }
+
+        .feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        .feature-item { background: #1a1c1e; color: #fff; border-radius: 15px; padding: 15px 20px; }
+        .feature-item .label { font-size: 0.75rem; color: #999; font-weight: 800; }
+        .feature-item .value { font-size: 1.3rem; font-weight: 900; margin-top: 5px; }
+
+        .main-data-layout { display: grid; grid-template-columns: 1fr 320px; gap: 15px; }
+
+        .metrics-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        .metric-item { background: #fff; border-radius: 18px; padding: 20px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.02); border: 2px solid transparent; transition: 0.3s; }
+
+        /* [추가] 미세먼지 강조 스타일 */
+        .metric-item.highlight { border-color: #ed1c24; background: #fffafa; }
+        .metric-item.highlight .label { color: #ed1c24; font-weight: 900; }
+        .metric-item.highlight .value { color: #ed1c24; font-size: 2rem; }
+        /* -------------------------- */
+
+        .metric-item .label { font-size: 0.8rem; color: #aaa; font-weight: 800; margin-bottom: 8px; }
+        .metric-item .value { font-size: 1.5rem; font-weight: 900; color: #333; }
+
+        .side-charts { display: flex; flex-direction: column; gap: 12px; }
+        .chart-card { background: #fff; border-radius: 18px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); height: 185px; box-sizing: border-box; }
+        .chart-card h4 { font-size: 0.75rem; margin: 0 0 10px 0; color: #888; font-weight: 800; }
+        .chart-container { position: relative; height: calc(100% - 30px); width: 100%; }
+
+        .report-full { grid-column: span 2; background: #fff; padding: 25px; border-radius: 18px; border-left: 6px solid #333; margin-top: 5px; }
+
+        header { margin-bottom: 0 !important; }
+
+        @media (max-width: 1300px) {
+            .main-data-layout { grid-template-columns: 1fr; }
+            .side-charts { flex-direction: row; }
+            .chart-card { flex: 1; }
+        }
+    </style>
+</head>
+<body>
+
+{% include 'header.html' %}
+
+   <div class="analysis-container">
+        <div class="page-title-area">
+            <h2>세부 분석 데이터 </h2>
+            <select id="gu-select" style="padding: 12px 25px; border-radius: 30px; border: 2px solid #eee; font-weight: 800; cursor: pointer; background: #fff;">
+                {% for gu in districts %}
+                <option value="{{ gu }}">{{ gu }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="analysis-top-row">
+            <div class="ai-summary-card">
+                <span style="font-size:0.85rem; font-weight:800; color:#ed1c24; margin-bottom:12px; display:block;">AI ANALYSIS REPORT</span>
+                <h2 id="display-gu-name">-</h2>
+                <div class="status-badge"><div class="dot-icon"></div> -</div>
+
+                <div class="info-row">
+                    <h4>최근 오염 누적</h4>
+                    <p id="air-flow-text">데이터 분석 중...</p>
+                </div>
+
+                <div class="info-row alert">
+                    <h4 style="color:#ed1c24;">환자 발생 위험도 (AI 예측 정확도 : 95%)</h4>
+                    <p id="health-guide">-</p>
+                </div>
+
+                <div class="info-row" style="border-left-color: #000; margin-bottom:0;">
+                    <h4>종합 판정 이유</h4>
+                    <p id="total-analysis-reason">데이터 분석 중...</p>
+                </div>
+            </div>
+
+            <div class="metrics-section">
+                <div class="feature-grid">
+                    <div class="feature-item">
+                        <div class="label">🏭 제조업 밀집도 (Feature)</div>
+                        <div class="value" id="stat-manu">0%</div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="label">🚛 교통/운수업 (Feature)</div>
+                        <div class="value" id="stat-trans">0%</div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="label">🏥 보건·사회복지 비중 (Feature)</div>
+                        <div class="value" id="stat-health">0%</div>
+                    </div>
+                </div>
+
+                <div class="main-data-layout">
+                    <div class="metrics-grid">
+                        <div class="metric-item highlight">
+                            <span class="label">미세먼지 (PM10)</span>
+                            <div class="value">- <span style="font-size:0.7rem;">µg/m³</span></div>
+                        </div>
+                        <div class="metric-item highlight">
+                            <span class="label">초미세먼지 (PM2.5)</span>
+                            <div class="value">- <span style="font-size:0.7rem;">µg/m³</span></div>
+                        </div>
+                        <div class="metric-item"><span class="label">오존(O₃)</span><div class="value">-</div></div>
+                        <div class="metric-item"><span class="label">이산화질소</span><div class="value">-</div></div>
+                        <div class="metric-item"><span class="label">아황산가스</span><div class="value">-</div></div>
+                        <div class="metric-item"><span class="label">일산화탄소</span><div class="value">-</div></div>
+                    </div>
+
+                    <div class="side-charts">
+                        <div class="chart-card">
+                            <h4>📈 72h 농도 추이 (PM10 / 2.5)</h4>
+                            <div class="chart-container"><canvas id="trendChart"></canvas></div>
+                        </div>
+                        <div class="chart-card">
+                            <h4>📊 주요 산업/보건 인프라 비중</h4>
+                            <div class="chart-container"><canvas id="featureChart"></canvas></div>
+                        </div>
+                    </div>
+                </div> <div class="report-full">
+                    <h4 style="margin:0 0 10px 0; font-size:1rem;">📊 AI 모델 상세 분석 의견 (정확도 95%)</h4>
+                    <p id="ai-report-text" style="margin:0; font-weight:600; color:#666; line-height:1.6; font-size:0.9rem;">
+                        데이터를 분석 중입니다...
+                    </p>
+                </div>
+   </div> </div> </div>
+
+{% include 'footer.html' %}
+
+<button id="btn-back-to-top" title="맨 위로 가기">↑</button>
+<script>
+    const allData = JSON.parse('{{ analysis_data | safe }}' || '{}');
+    let trendChart, featureChart;
+
+    const riskConfig = {
+        "-1": {
+            text: "점검 중",
+            color: "#a0a0a0",
+            advice: "현재 해당 지역의 실시간 관측 데이터를 확인할 수 없습니다."
+        },
+        0: {
+            text: "안전",
+            color: "#00c73c",
+            advice: "🟢 안전 (가장 양호한 보건 상태)"
+        },
+        1: {
+            text: "안전",
+            color: "#00c73c",
+            advice: "🟢 안전 (실외 활동에 지장 없음)"
+        },
+        2: {
+            text: "보통",
+            color: "#ffbb00",
+            advice: "🟡 보통 (대기질은 양호하나 노출 주의)"
+        },
+        4: {
+            text: "보통",
+            color: "#ffbb00",
+            advice: "🟡 보통 (일반인 보건 지수 안정 범위)"
+        },
+        3: {
+            text: "위험",
+            color: "#f06e14",
+            advice: "🟠 위험 (호흡기 민감층 실외 활동 제한 권고)"
+        },
+        5: {
+            text: "매우위험",
+            color: "#ff4d4d",
+            advice: "🔴 매우 위험 (실외활동 금지)"
+        }
+    };
+
+    const patientRatioMap = {
+        5: 9.20, // 고위험
+        3: 8.88, // 위험
+        4: 8.63, // 보통
+        2: 8.13, // 보통
+        1: 6.99, // 안전
+        0: 7.41, // 안전
+        "-1": 0
+    };
+    function updateView(guName) {
+        const shortName = guName.replace("구", "");
+        let data = allData[guName] || allData[shortName] || {};
+
+        // 1. 데이터 부재 시 기본값 설정
+        if (!data.risk) {
+            data.risk = -1;
+            data.pm10 = "-";
+            data.pm25 = "-";
+            data.manu = 0;
+            data.trans = 0;
+            data.health = 0;
+            data.total_pop = 0;
+            data.trend_pm10 = [0, 0, 0, 0];
+            data.trend_pm25 = [0, 0, 0, 0];
+        }
+
+        // 2. 4일 평균(avgVal) 계산
+        let avgVal = "0.0";
+        if (data.trend_pm10 && data.trend_pm10.length > 0) {
+            let sum = data.trend_pm10.reduce((a, b) => a + (Number(b) || 0), 0);
+            avgVal = (sum / data.trend_pm10.length).toFixed(1);
+        }
+
+        // 3. 분석 맵 정의 (함수 상단으로 이동)
+        const analysisMap = {
+            5: {
+                lag: `최근 4일 평균 ${avgVal}㎍/㎥ (매우 높음)`,
+                reason: `최근 4일간 고농도 미세먼지가 체내에 깊숙이 누적되었습니다. 이미 호흡기가 받은 누적 부담이 임계치를 넘어선 '고위험군' 단계입니다.`
+            },
+            3: {
+                lag: `최근 4일 평균 ${avgVal}㎍/㎥ (고농도 누적)`,
+                reason: `며칠간 유입된 오염원이 대기 중에 잔류하며 호흡기에 지속적인 자극을 주고 있습니다. 겉으로 보이는 농도보다 체감되는 건강 위험도가 훨씬 높으니 각별한 주의가 필요합니다.`
+            },
+            4: {
+                lag: `최근 4일 평균 ${avgVal}㎍/㎥ (보통 수준)`,
+                reason: `평균 농도는 보통 수준이나, 대기 질이 급변하기 쉬운 상태입니다. 며칠간 누적된 미세먼지로 인해 호흡기가 예민해져 있어, 작은 오염 농도 상승에도 큰 피로감을 느낄 수 있습니다.`
+            },
+            2: {
+                lag: `최근 4일 평균 ${avgVal}㎍/㎥ (누적 반영)`,
+                reason: `지역의 산업 활동과 교통량 등 복합적인 요인으로 인해 미세먼지가 체내에 미세하게 계속 쌓이는 환경입니다. 외부 농도 수치에 안심하기보다는 지속적인 호흡기 보호가 필요한 '누적 관리' 구간입니다.`
+            },
+            1: {
+                lag: `최근 4일 평균 ${avgVal}㎍/㎥ (양호)`,
+                reason: `지난 4일간 대기 확산이 원활하여 체내에 쌓인 미세먼지 부담이 적은 상태입니다. 호흡기가 비교적 편안하게 회복할 수 있는 공기 질을 유지하고 있습니다.`
+            },
+            0: {
+                lag: `최근 4일 평균 ${avgVal}㎍/㎥ (매우 쾌적)`,
+                reason: `최근 기온과 습도, 미세먼지 농도가 모두 보건 최적 범위를 유지하고 있습니다.`
+            },
+            '-1': {
+                lag: "데이터를 불러오는 중입니다.",
+                reason: "현재 해당 지역의 실시간 관측 데이터를 확인할 수 없습니다."
+            }
+        };
+
+        const riskLevel = parseInt(data.risk);
+        const config = riskConfig[riskLevel] || riskConfig[1];
+        const current = analysisMap[riskLevel] || analysisMap['-1'];
+
+        // 4. 화면 텍스트 업데이트
+        document.getElementById('display-gu-name').innerText = guName;
+        document.getElementById('air-flow-text').innerHTML = current.lag;
+        document.getElementById('total-analysis-reason').innerHTML = current.reason;
+        document.getElementById('health-guide').innerText = config.advice;
+
+        // 5. 상태 배지 및 지표 업데이트
+        const statusBadge = document.querySelector('.status-badge');
+        statusBadge.innerHTML = `<div class="dot-icon" style="background:${config.color}"></div> ${config.text}`;
+        statusBadge.style.color = config.color;
+
+        const manuVal = parseFloat(data.manu || 0);
+        const transVal = parseFloat(data.trans || 0);
+        const healthVal = parseFloat(data.health || 0);
+        document.getElementById('stat-manu').innerText = manuVal + "%";
+        document.getElementById('stat-trans').innerText = transVal + "%";
+        document.getElementById('stat-health').innerText = healthVal + "%";
+
+        const metricValues = document.querySelectorAll('.metrics-grid .value');
+        metricValues[0].innerHTML = `${data.pm10 || 0} <span style="font-size:0.7rem;">µg/m³</span>`;
+        metricValues[1].innerHTML = `${data.pm25 || 0} <span style="font-size:0.7rem;">µg/m³</span>`;
+
+        const otherKeys = ['o3', 'no2', 'so2', 'co'];
+        otherKeys.forEach((key, idx) => {
+            if (metricValues[idx + 2]) {
+                metricValues[idx + 2].innerHTML = `${data[key] || '-'} <span style="font-size:0.7rem; color:#ccc;">ppm</span>`;
+            }
+        });
+
+        // 6. 하단 AI 상세 분석 리포트 생성
+        const popVal = parseInt(data.total_pop || 0);
+        const ratio = patientRatioMap[riskLevel] || 0;
+        const totalPatients = Math.round((ratio * popVal) / 1000);
+
+        if (riskLevel === -1) {
+            document.getElementById('ai-report-text').innerHTML = `
+                <span style="color:#888; font-weight:800;">현재 ${guName} 지역의 관측소 점검 또는 데이터 전송 지연으로 상세 분석이 불가능합니다.</span><br>
+                불편을 드려 죄송합니다. 잠시 후 다시 시도해 주시기 바랍니다.
+            `;
+        } else {
+            // 기존 분석 로직
+            let regionContext = (Math.max(manuVal, transVal, healthVal) < 5.0)
+                ? "주요 산업 시설 비중이 낮고 고르게 분포된 주거 중심 지구입니다."
+                : (manuVal >= transVal && manuVal >= healthVal) ? `제조업 비중(${manuVal.toFixed(1)}%)이 높은 공업지구로 오염원 누적에 민감합니다.`
+                : (transVal >= healthVal) ? `교통업 비중(${transVal.toFixed(1)}%)이 높은 요충지로 배기가스 영향이 지배적입니다.`
+                : `보건·복지 시설(${healthVal.toFixed(1)}%) 밀집 지역으로 취약계층 관리가 핵심입니다.`;
+
+            const riskAdvice = (riskLevel >= 3) ? "야외 활동을 전면 중단하고 실내 공기질 관리에 집중하십시오." :
+                               (riskLevel === 2) ? "민감군은 장시간 실외 활동을 줄이고 마스크를 착용하시기 바랍니다." :
+                               "실외 활동과 가벼운 산책을 하기에 아주 좋은 날입니다.";
+
+            document.getElementById('ai-report-text').innerHTML = `
+                ${guName}은(는) ${regionContext}<br>
+                현재 인구 <b>약 ${popVal.toLocaleString()}명</b> 기준, 오늘 예상 호흡기 질환 내원 환자 수는
+                <span style="color:#ed1c24; font-size:1.1rem; font-weight:900;">${totalPatients.toLocaleString()}명</span>입니다.<br><br>
+                <span style="color:#ed1c24; font-weight:800;">AI 모델 분석 결과,</span> ${riskAdvice}
+            `;
+        }
+
+        // 7. 차트 업데이트
+        if (trendChart) {
+            trendChart.data.datasets[0].data = data.trend_pm10 || [];
+            trendChart.data.datasets[1].data = data.trend_pm25 || [];
+            trendChart.update();
+        }
+        if (featureChart) {
+            featureChart.data.datasets[0].data = [manuVal, transVal, healthVal];
+            featureChart.update();
+        }
+    }
+
+    window.onload = () => {
+        const guSelect = document.getElementById('gu-select');
+        const userRegion = "{{ session.get('user_region', '') }}".trim();
+
+        trendChart = new Chart(document.getElementById('trendChart').getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: ['72h', '48h', '24h', 'Now'],
+                datasets: [
+                    { label: 'PM10', borderColor: '#ed1c24', backgroundColor: 'rgba(237, 28, 36, 0.1)', fill: true, tension: 0.4, data: [] },
+                    { label: 'PM2.5', borderColor: '#333', borderDash: [5, 5], fill: false, tension: 0.4, data: [] }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        });
+
+        featureChart = new Chart(document.getElementById('featureChart').getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: ['제조업', '교통/운수', '보건복지'],
+                datasets: [{ backgroundColor: ['#ed1c24', '#333', '#22b14c'], borderRadius: 5, data: [] }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { beginAtZero: true, max: 30, ticks: { font: { size: 11, weight: '600' } } },
+                    y: { ticks: { font: { size: 12, weight: '800' } } }
+                }
+            }
+        });
+
+        if (userRegion) {
+            // '구' 포함 여부와 관계없이 정확하게 매칭 시도
+            for (let i = 0; i < guSelect.options.length; i++) {
+                const optionValue = guSelect.options[i].value.trim();
+                if (optionValue === userRegion || optionValue === userRegion.replace(/구$/, '') || optionValue.replace(/구$/, '') === userRegion) {
+                    guSelect.selectedIndex = i;
+                    break;
+                }
+            }
+        }
+
+        updateView(guSelect.value);
+        guSelect.addEventListener('change', function() { updateView(this.value); });
+    };
+    document.getElementById('btn-back-to-top').addEventListener('click', function() {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    });
+</script>
+</body>
+</html>

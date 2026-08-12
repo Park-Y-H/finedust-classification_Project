@@ -1,0 +1,49 @@
+<footer class="site-footer">
+        <div class="footer-top">
+            <div class="footer-inner">
+                <div class="footer-column">
+                    <h4>종합 보건 예보</h4>
+                    <ul>
+                        <li><a href="{{ url_for('main.dashboard') }}">종합 보건 위험 등급</a></li>
+                        <li><a href="{{ url_for('main.dashboard', type='pm10') }}">미세먼지 (PM10)</a></li>
+                        <li><a href="{{ url_for('main.dashboard', type='pm25') }}">초미세먼지 (PM2.5)</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>분석 리포트</h4>
+                    <ul>
+                        <li><a href="{{ url_for('main.analysis') }}">자치구별 분석 리포트</a></li>
+                        <li><a href="{{ url_for('main.comparison_view') }}">통계 데이터 비교</a></li>
+                        <li><a href="{{ url_for('mask.mask_control') }}">AI 실시간 관제 시스템</a></li>
+                        <li><a href="{{ url_for('chatbot.chatbot') }}">실시간 AI 질문</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>사용자 메뉴</h4>
+                    <ul>
+                        {% if session.get('user_id') %}
+                            <li><a href="{{ url_for('auth.mypage') }}">마이페이지</a></li>
+                            <li><a href="{{ url_for('auth.logout') }}">로그아웃</a></li>
+                        {% else %}
+                            <li><a href="{{ url_for('auth.login') }}">로그인</a></li>
+                            <li><a href="{{ url_for('auth.signup') }}">회원가입</a></li>
+                            <li><a href="{{ url_for('auth.find_account') }}">ID / PW 찾기</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <div class="footer-inner">
+                <div class="footer-logo-text">서울시 AI 미세먼지 보건 분석 시스템</div>
+                <div class="legal-links">
+                    <a href="#" style="color: #ddd; font-weight: 700; text-decoration: none;">개인정보처리방침</a>
+                </div>
+                <p class="address">
+                    06561 서울특별시 중구 세종대로 110 (서울시청) | Tel. 02-120 | Fax. 02-123-4567<br>
+                    © 2026 SEOUL AI DUST ANALYSIS SYSTEM. ALL RIGHTS RESERVED.
+                </p>
+            </div>
+        </div>
+    </footer>
