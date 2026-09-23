@@ -13,7 +13,6 @@
         --bg:#f4f7fa; --card-bg:#ffffff;
     }
 
-    /* [1] 초기화 */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body, html {
         width: 100%; height: 100%;
@@ -21,7 +20,6 @@
         overflow: hidden;
     }
 
-    /* [2] 스크롤 컨테이너 */
     .wrapper {
         width: 100%; height: 100vh;
         overflow-y: auto;
@@ -29,14 +27,12 @@
         -webkit-overflow-scrolling: touch;
     }
 
-    /* [3] 헤더 본체: 배경은 꽉 차있지만 내부 요소는 여백을 가짐 */
     header {
         position: fixed;
         top: 20px;
         left: 50%;
         transform: translateX(-50%);
 
-        /* ★ 이 수치가 서브와 동일해야 작게 안 느껴집니다 */
         width: calc(100vw - 20px);
         max-width: 1580px;
 
@@ -53,22 +49,20 @@
     }
 
     header:hover {
-            border-radius: 14px 14px 0 0; /* 위쪽만 둥글게, 아래쪽(왼쪽/오른쪽)은 0 */
+            border-radius: 14px 14px 0 0; 
             background: #fff !important;
         }
 
-    /* 로고 영역 */
     .logo-area { display: flex; align-items: center; gap: 10px; font-weight: 900; font-size: 1.1rem; cursor: pointer; transition: color 0.3s; }
     .logo-circle { width: 10px; height: 10px; background: var(--danger); border-radius: 50%; }
 
-    /* 상단 메뉴 (GNB) */
     .main-menu {
         display: flex;
         list-style: none;
-        gap: 100px; /* 메가 메뉴 column gap과 일치시킴 */
+        gap: 100px; 
     }
     .menu-item {
-        width: 150px; /* 대주제 글자 영역 너비 고정 */
+        width: 150px; 
         text-align: center;
     }
     .menu-link {
@@ -79,7 +73,6 @@
         color: #333;
     }
 
-    /* [4] 메가 메뉴 스타일: 헤더 가로폭(1600px) 내에서만 작동 */
     .mega-menu-wrapper {
         position: absolute;
         top: 60px;
@@ -95,31 +88,28 @@
         z-index: 9999 !important;
         border-radius: 0 0 14px 14px;
 
-        /* ★ 수정: 메뉴 뭉치를 서브처럼 오른쪽 끝으로 밀기 */
         display: flex;
         justify-content: flex-end;
     }
 
-    /* 헤더에 마우스 올리면 메가메뉴 등장 */
     header:hover .mega-menu-wrapper {
-        height: 200px; /* 250px에서 200px로 수정 (서브와 동일) */
+        height: 200px; 
         visibility: visible;
     }
 
-    /* 메가메뉴 내부 정렬 */
     .mega-content {
         display: flex;
-        /* ★ 수정: 내부 아이템들은 왼쪽부터 나열 (서브와 동일) */
+     
         justify-content: flex-start;
         gap: 100px;
         padding: 35px 0;
-        margin-right: 25px; /* 헤더 우측 여백과 맞춤 */
+        margin-right: 25px; 
         box-sizing: border-box;
-        width: auto;        /* 100%에서 auto로 변경 */
+        width: auto;        
     }
 
     .mega-column {
-        width: 150px;              /* 상단 .menu-item 너비와 일치 */
+        width: 150px;             
         display: flex;
         flex-direction: column;
         gap: 15px;
@@ -136,15 +126,15 @@
     }
 
     .mega-banner {
-        position: relative; /* absolute 해제 */
+        position: relative; 
         margin-right: 0;
-        left: -200px;       /* 서브 페이지와 동일한 위치값 */
-        width: 550px;       /* 서브 페이지 배너 너비 550px로 일치 */
+        left: -200px;       
+        width: 550px;      
         height: auto;
         border-radius: 12px;
         overflow: hidden;
         background: #eee;
-        margin-left: 0;     /* 기존 25px 제거 */
+        margin-left: 0;     
     }
     .mega-banner img { width: 100%; height: 100%; object-fit: cover; }
     .mega-banner::after {
@@ -158,13 +148,11 @@
     .banner-text p { font-size: 0.85rem; opacity: 0.9; }
 
 
-    /* [5] 메인 페이지 전용 효과 (투명도 및 숨김 애니메이션) */
         header.on-hero:not(:hover) {
             background: transparent !important;
             box-shadow: none !important;
         }
 
-        /* ★ 추가/수정: 헤더에 마우스 올리면 무조건 흰색 배경 */
         header:hover {
             background: #fff !important;
             box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
@@ -175,9 +163,6 @@
             color: #fff !important;
         }
 
-
-
-        /* 호버 시 글자색 검은색으로 변경 */
         header:hover .logo-area,
         header:hover .menu-link {
             color: #333 !important;
@@ -188,7 +173,6 @@
             opacity: 0;
         }
 
-    /* [6] 섹션 및 기타 레이아웃 */
     section {
         width: 100%; height: 100vh;
         display: flex; flex-direction: column; justify-content: center; align-items: center;
@@ -198,8 +182,8 @@
 
     .swiper.hero-swiper {
         width: 100%;
-        height: 100vh; /* 화면 꽉 차게 */
-        z-index: 1; /* 헤더보다 아래 */
+        height: 100vh; 
+        z-index: 1; 
     }
 
     .swiper-slide.hero-slide {
@@ -237,15 +221,15 @@
         margin-right: auto;
     }
 
-    /* 양옆 버튼 디자인 수정 */
+
     .hero-swiper .swiper-button-next,
     .hero-swiper .swiper-button-prev {
-        color: rgba(255,255,255,0.6) !important; /* 버튼 색상 흰색 투명하게 */
+        color: rgba(255,255,255,0.6) !important; 
         transition: all 0.3s;
     }
     .hero-swiper .swiper-button-next:hover,
     .hero-swiper .swiper-button-prev:hover {
-        color: #fff !important; /* 마우스 올리면 선명하게 */
+        color: #fff !important; 
         transform: scale(1.1);
     }
 
@@ -256,17 +240,16 @@
     }
     .cta-btn:hover { background: #fff; color: var(--danger); transform: translateY(-5px); }
 
-    /* [6] 기능 소개 섹션 - 카드 디자인 대폭 강화 */
     .features-section {
-        background: #000; /* 전체 배경 어둡게 */
-        padding: 0 !important; /* 여백 제거 */
+        background: #000; 
+        padding: 0 !important; 
     }
 
     .features-grid {
         display: flex;
         width: 100%;
-        height: 100vh; /* 화면 꽉 차게 */
-        gap: 0; /* 카드 사이 간격 제거 (이미지 연결 느낌) */
+        height: 100vh; 
+        gap: 0; 
     }
 
     .feature-card {
@@ -274,17 +257,16 @@
         position: relative;
         display: flex;
         flex-direction: column;
-        justify-content: flex-end; /* 텍스트를 아래쪽으로 */
+        justify-content: flex-end; 
         padding: 80px 40px;
         color: #fff;
-        text-align: left; /* 왼쪽 정렬로 가독성 향상 */
+        text-align: left; 
         transition: all 0.6s cubic-bezier(0.25, 1, 0.5, 1);
         overflow: hidden;
         border-right: 1px solid rgba(255,255,255,0.1);
         text-decoration: none;
     }
 
-    /* 카드별 배경 이미지 설정 */
     .feature-card::before {
         content: '';
         position: absolute;
@@ -296,21 +278,19 @@
         filter: brightness(0.6) blur(1px);
     }
 
-    /* 카드별 이미지 경로 (이미지 파일명에 맞게 수정하세요) */
+
     .card-1::before { background-image: linear-gradient(to top, rgba(0,0,0,0.8), transparent), url('/static/카드1.jpg'); }
     .card-2::before { background-image: linear-gradient(to top, rgba(0,0,0,0.8), transparent), url('/static/카드2.png'); }
     .card-3::before { background-image: linear-gradient(to top, rgba(0,0,0,0.8), transparent), url('/static/서울사진7.png'); }
 
-    /* 호버 효과 */
-    .feature-card:hover { flex: 1.5; } /* 호버 시 넓어짐 */
+    .feature-card:hover { flex: 1.5; } 
     .feature-card:hover::before { transform: scale(1.1); filter: brightness(0.8); }
 
-    /* 카드 내 텍스트 컨텐츠 */
+
     .feature-card .content-box {
         position: relative;
         z-index: 2;
         width: 100%;
-        /* pointer-events: none; 제거 */
     }
 
     .icon-box {
@@ -331,19 +311,18 @@
         max-width: 300px;
     }
 
-    /* 버튼 스타일 */
     .more-btn {
         margin-top: 30px;
         padding: 10px 25px;
         border: 1px solid #fff;
         display: inline-block;
         color: #fff;
-        text-decoration: none; /* 밑줄 제거 */
+        text-decoration: none; 
         font-size: 0.9rem;
         transition: 0.3s;
-        cursor: pointer;      /* 마우스 포인터 모양 변경 */
-        position: relative;    /* 층수 보장 */
-        z-index: 3;           /* 가장 위로 올림 */
+        cursor: pointer;      
+        position: relative;   
+        z-index: 3;           
     }
     .feature-card:hover .more-btn { background: #fff; color: #000; }
 
@@ -360,7 +339,6 @@
     padding: 0 25px;
 }
 
-/* 상단 메뉴 영역 - 중앙 정렬로 변경 */
 .footer-top {
     border-bottom: 1px solid #2a2c2e;
     padding-bottom: 20px;
@@ -369,13 +347,13 @@
 
 .footer-top .footer-inner {
     display: flex;
-    justify-content: center; /* 왼쪽 정렬에서 가운데 정렬로 변경 */
-    gap: 80px;               /* 컬럼 사이 간격을 적절히 조정 */
-    text-align: center;      /* 메뉴 텍스트들도 중앙 정렬 */
+    justify-content: center; 
+    gap: 80px;               
+    text-align: center;      
 }
 
 .footer-column {
-    min-width: 150px;        /* 중앙 정렬 시 균형을 위해 최소 폭 설정 */
+    min-width: 150px;      
 }
 
 .footer-column h4 {
@@ -395,7 +373,7 @@
 }
 .footer-column ul li a:hover { color: #fff; }
 
-/* 하단 정보 영역 - 중앙 정렬 */
+
 .footer-bottom {
     text-align: center;
 }
@@ -415,7 +393,6 @@
     margin: 0;
 }
 
-/* Top 버튼 (우측 고정 유지) */
 #btn-back-to-top {
     position: fixed;
     bottom: 25px;
@@ -593,7 +570,6 @@
     function scrollToSection(index) {
         isScrolling = true;
 
-        // 첫 화면(index 0)이 아니면 헤더를 즉시 숨깁니다.
         if (index > 0) {
             header.classList.add('hide');
         } else {
@@ -619,7 +595,7 @@
         if (e.deltaY > 0) {
             if (currentIdx < sections.length - 1) {
                 currentIdx++;
-                scrollToSection(currentIdx); // scrollToSection 함수가 알아서 숨겨줍니다.
+                scrollToSection(currentIdx); 
             } else {
                 header.classList.add('hide');
                 wrapper.scrollTo({ top: wrapper.scrollHeight, behavior: 'smooth' });
@@ -639,14 +615,13 @@
     }, { passive: false });
 
     const swiper = new Swiper('.hero-swiper', {
-        loop: true, // 무한 반복
+        loop: true, 
         autoplay: {
-            delay: 5000, // 5초마다 자동 넘김
-            disableOnInteraction: false, // 마우스로 조작해도 자동 넘김 유지
+            delay: 5000, 
+            disableOnInteraction: false, 
         },
-        speed: 800, // 넘어가 속도 (ms)
+        speed: 800, 
 
-        // 양옆 이동 버튼 설정
         navigation: {
             nextEl: '.swiper-button-next',
             prevEl: '.swiper-button-prev',
@@ -654,14 +629,11 @@
     });
 
     document.getElementById('btn-back-to-top').addEventListener('click', function() {
-        // 1. 현재 섹션 인덱스를 첫 번째(Hero)로 초기화
         currentIdx = 0;
 
-        // 2. 헤더 숨김 해제 및 스타일 업데이트
         header.classList.remove('hide');
         updateHeaderStyle();
 
-        // 3. 실제 스크롤이 일어나는 'wrapper' 컨테이너를 맨 위로 올림
         wrapper.scrollTo({
             top: 0,
             behavior: 'smooth'
