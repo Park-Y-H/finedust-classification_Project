@@ -64,12 +64,10 @@ def background_mask_calculator():
                             if cls == 3:
                                 current_stats["accum_child_masked"] += 1
 
-                            # 💡 [추가] 준수율 계산식
                             if current_stats["accum_child_total"] > 0:
                                 current_stats["child_rate"] = int(
                                     (current_stats["accum_child_masked"] / current_stats["accum_child_total"]) * 100)
 
-                    # 전체 착용률 계산
                 if current_stats["accum_total"] > 0:
                     current_stats["total_rate"] = int(
                         (current_stats["accum_masked"] / current_stats["accum_total"]) * 100)
