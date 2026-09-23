@@ -31,12 +31,10 @@ def ask_chatbot():
     data = request.get_json()
     user_message = data.get('message', '')
 
-    # [1] 정규식으로 'OO구' 형태를 질문에서 자동으로 추출
-    # 질문에 'OO구'가 포함되어 있는지 찾습니다.
     match = re.search(r'([가-힣]+구)', user_message)
     target_gu = match.group(1) if match else session.get('user_region', '중구')
 
-    # [2] DB 데이터 로드 (범용적 접근)
+    # DB 데이터 로드
     analysis_context = f"{target_gu}에 대한 분석 데이터를 찾을 수 없습니다."
     try:
         conn = get_oracle_connection()
@@ -48,7 +46,6 @@ def ask_chatbot():
             real_data = json.loads(raw_json)
             analysis_data = real_data.get('analysis_data', {})
 
-            # DB에 있는 데이터라면 무엇이든 매칭 (하드코딩 불필요)
             gu_data = analysis_data.get(target_gu)
 
             if gu_data:
@@ -58,13 +55,11 @@ def ask_chatbot():
                 reason = gu_data.get('reason', "현재 해당 지역의 분석 정보가 없습니다.")
                 analysis_context = f"{target_gu}의 현재 미세먼지(PM10) 농도는 {pm10}이며, 통합 상태는 '{risk_label}'입니다. 상세 분석: {reason}"
             else:
-                # 관할 구가 아니라고 하지 말고, 데이터 업데이트 중임을 알림
                 analysis_context = f"현재 {target_gu}의 미세먼지 정보는 업데이트 중입니다. 잠시 후 다시 확인해 주세요."
         conn.close()
     except Exception as e:
         print(f"❌ 데이터 로드 실패: {e}")
 
-    # [3] 프롬프트 구성 (target_gu 변수만 활용)
     context = f"""
         당신은 친절하고 정중한 미세먼지 박사입니다. 아래 [데이터]만을 사용하여 사용자의 질문에 상세히 답변하세요.
         - 데이터에 있는 수치(농도 등)와 상태를 반드시 문장에 포함하세요.
@@ -75,14 +70,13 @@ def ask_chatbot():
         {analysis_context}
         """
 
-    # [4] 페이로드 설정
     payload = {
         "prompt": f"### Instruction:\n{context}\n질문: {user_message}\n\n### Response:\n",
         "parameters": {
-            "max_new_tokens": 80,  # 50은 너무 짧아 문장이 잘릴 수 있음
-            "temperature": 0.4,    # 0.4 정도로 올려야 따뜻한 말투가 나옵니다.
-            "repetition_penalty": 2.5, # 10.0은 너무 강합니다. 2.5가 문장 완성도가 가장 높습니다.
-            "do_sample": True,     # 자연스러운 생성을 위해 True 필수
+            "max_new_tokens": 80,  
+            "temperature": 0.4,    
+            "repetition_penalty": 2.5, 
+            "do_sample": True,     
             "stop": ["###", "\n\n", "서울시 공기청정시스템"]
         }
     }
@@ -98,11 +92,8 @@ def ask_chatbot():
         result = response.json()
         answer = result.get('answer', "").replace("### Response:", "").strip()
 
-        # 반복 루프 제거 (이미 넣으셨다면 유지)
         answer = re.sub(r'(.{10,})\1+', r'\1', answer)
 
-        # 만약 모델이 "보통인데 좋음"처럼 모순된 말을 하면,
-        # 서버에서 농도와 등급이 명시된 앞부분 문장만 잘라내기
         if "." in answer:
             sentences = [s.strip() for s in answer.split('.') if s.strip()]
             if len(sentences) >= 2:
