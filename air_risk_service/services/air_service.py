@@ -23,7 +23,7 @@ def get_seoul_air_quality():
     auth_key = os.getenv("SEOUL_AIR_KEY")
     url = f"http://openapi.seoul.go.kr:8088/{auth_key}/json/RealtimeCityAir/1/25/"
     air_dict = {}
-    time_info = {}  # 구별 개별 시각 저장용
+    time_info = {}  
     common_time = ""
 
     try:
@@ -31,10 +31,9 @@ def get_seoul_air_quality():
         data = res.json()
         if 'RealtimeCityAir' in data:
             rows = data['RealtimeCityAir']['row']
-            common_time = rows[0].get('MSRMT_DT', "")  # 전체 기준 시간
+            common_time = rows[0].get('MSRMT_DT', "") 
             for item in rows:
                 gu = item['MSRSTN_NM']
-                # JSON 원본 키값에 맞게 수정
                 pm10 = item.get('PM')
                 pm25 = item.get('FPM')
                 o3 = item.get('OZON')
@@ -47,7 +46,7 @@ def get_seoul_air_quality():
                     air_dict[gu] = {
                         'pm10': float(pm10) if pm10 else None,
                         'pm25': float(pm25) if pm25 else None,
-                        'o3': float(o3) if o3 else None,  # 오존이 없어도 에러 안 남
+                        'o3': float(o3) if o3 else None,  
                         'no2': float(no2) if no2 else None,
                         'so2': float(so2) if so2 else None,
                         'co': float(co) if co else None
@@ -69,14 +68,13 @@ def get_past_air_data(station_name):
         'numOfRows': '100',
         'pageNo': '1',
         'stationName': station_name,
-        'dataTerm': 'MONTH',  # [수정] DAILY 대신 MONTH를 사용해야 3일 전 데이터가 안정적으로 옵니다.
+        'dataTerm': 'MONTH',  
         'ver': '1.0'
     }
 
     try:
         res = requests.get(url, params=params, timeout=10)
         if "quota exceeded" in res.text.lower():
-            # 쿼터 초과 시 에러를 내지 않고 조용히 None 반환 (캐시가 있으면 캐시를 쓰고, 없으면 점검중 표시)
             return [[None] * 3, [None] * 3]
         print(f"DEBUG [{station_name}]: {res.text[:50]}")
         data = res.json()
@@ -91,7 +89,6 @@ def get_past_air_data(station_name):
 
 
         def find_available_past(target_idx):
-            # 정해진 시점부터 최대 30시간 전(target_idx + 6)까지 탐색
             for offset in range(7):
                 idx = target_idx + offset
                 if 0 <= idx < len(items):
@@ -105,7 +102,6 @@ def get_past_air_data(station_name):
         l2_10, l2_25 = find_available_past(47)
         l3_10, l3_25 = find_available_past(71)
 
-        # 리스트 형태 반환: [[PM25 과거 3,2,1], [PM10 과거 3,2,1]]
         return [[l3_25, l2_25, l1_25], [l3_10, l2_10, l1_10]]
 
 
