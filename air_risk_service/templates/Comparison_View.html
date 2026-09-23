@@ -25,7 +25,6 @@
             font-size: 1.2rem; font-weight: 800; margin-bottom: 25px; cursor: pointer; background: #fff;
         }
 
-        /* 지표 스타일 (4개 격자로 확장) */
         .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .metric-box { background: #f8f9fa; padding: 18px; border-radius: 18px; text-align: center; border: 1px solid #f0f2f5; }
         .metric-box.main { grid-column: span 1; padding: 22px; }
@@ -151,7 +150,6 @@
     let featureChart, trendChart;
 
     function getAnalysis(data, guName) {
-    // 1. 보내주신 등급 매핑 정의
     const statusMap = {
         '5': { health: "매우 위험", context: "최근 대기 오염 물질이 매우 높게 정체된 상태" },
         '3': { health: "위험", context: "고농도 오염 물질의 누적으로 주의가 필요한 단계" },
@@ -164,10 +162,8 @@
 
     if (!data || data.risk === undefined) return `${guName} 분석 데이터 점검 중.`;
 
-    // 2. 해당 데이터의 risk(숫자)에 맞는 정보 가져오기
     const currentStatus = statusMap[data.risk.toString()] || statusMap['-1'];
 
-    // 3. 산업 특성 텍스트 (기존 로직 유지)
     let industryContext = (data.manu > data.trans && data.manu > data.health) ? "제조업 중심 공업지구" :
                           (data.trans > data.manu && data.trans > data.health) ? "교통 요충지" : "보건·복지 밀집 지역";
 
@@ -182,7 +178,6 @@
         const d1 = allData[gu1] || {};
         const d2 = allData[gu2] || {};
 
-        // 수치 업데이트 (PM10, PM2.5, O3, NO2)
         document.getElementById('pm10-1').innerText = d1.pm10 || 0;
         document.getElementById('pm25-1').innerText = d1.pm25 || 0;
         document.getElementById('o3-1').innerText = d1.o3 || '-';
@@ -193,13 +188,11 @@
         document.getElementById('o3-2').innerText = d2.o3 || '-';
         document.getElementById('no2-2').innerText = d2.no2 || '-';
 
-        // AI 텍스트
         document.getElementById('ai-label-1').innerText = `AI ANALYSIS - ${gu1}`;
         document.getElementById('ai-label-2').innerText = `AI ANALYSIS - ${gu2}`;
         document.getElementById('ai-text-1').innerHTML = getAnalysis(d1, gu1);
         document.getElementById('ai-text-2').innerHTML = getAnalysis(d2, gu2);
 
-        // 차트 업데이트
         featureChart.data.datasets[0].label = gu1;
         featureChart.data.datasets[1].label = gu2;
         featureChart.data.datasets[0].data = [d1.manu||0, d1.trans||0, d1.health||0];
@@ -217,14 +210,11 @@
         const select1 = document.getElementById('select-1');
         const select2 = document.getElementById('select-2');
 
-        // [1] 세션에 저장된 관심 지역 가져오기
         const userRegion = "{{ session.get('user_region', '') }}".trim();
 
-        // [2] 관심 지역이 있다면 왼쪽(select-1)의 기본값으로 설정
         if (userRegion) {
             for (let i = 0; i < select1.options.length; i++) {
                 const optVal = select1.options[i].value.trim();
-                // '구'가 붙어있거나 떼어져 있는 경우 모두 대응
                 if (optVal === userRegion || optVal === userRegion.replace(/구$/, '') || optVal.replace(/구$/, '') === userRegion) {
                     select1.selectedIndex = i;
                     break;
@@ -232,11 +222,9 @@
             }
         }
 
-    // [3] 만약 왼쪽과 오른쪽이 같은 지역으로 선택된다면, 오른쪽은 다음 지역으로 변경 (비교를 위해)
     if (select1.value === select2.value) {
         select2.selectedIndex = (select1.selectedIndex + 1) % select2.options.length;
     }
-        // 산업 특성 차트 초기화
         featureChart = new Chart(document.getElementById('featureChartComp'), {
             type: 'bar',
             data: {
@@ -252,7 +240,6 @@
             }
         });
 
-        // 농도 추이 차트 초기화
         trendChart = new Chart(document.getElementById('trendChartComp'), {
             type: 'line',
             data: {
