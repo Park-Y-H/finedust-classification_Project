@@ -9,34 +9,27 @@
         body { background-color: #f4f7fa; margin: 0; padding: 0; }
         .control-container { width: 100%; max-width: 1600px; margin: 0 auto; padding: 40px 25px 100px; box-sizing: border-box; }
 
-        /* 타이틀 영역 */
         .page-title-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; padding: 0 10px; }
         .page-title-area h2 { margin: 0; font-weight: 900; color: #333; font-size: 1.8rem; }
 
-        /* 메인 레이아웃: 영상(좌) + 데이터(우) */
         .control-main-row { display: flex; gap: 20px; align-items: flex-start; }
 
-        /* [좌측] 실시간 영상 카드 */
         .video-card { flex: 1; background: #000; border-radius: 20px; overflow: hidden; box-shadow: 0 8px 30px rgba(0,0,0,0.2); position: relative; aspect-ratio: 16 / 9; }
         .video-stream { width: 100%; height: 100%; object-fit: cover; }
         .live-badge { position: absolute; top: 20px; left: 20px; background: #ed1c24; color: #fff; padding: 5px 15px; border-radius: 5px; font-weight: 900; font-size: 0.8rem; animation: blink 1.5s infinite; }
         @keyframes blink { 50% { opacity: 0.5; } }
 
-        /* [우측] 관제 데이터 사이드바 */
         .control-sidebar { flex: 0 0 400px; display: flex; flex-direction: column; gap: 20px; }
 
-        /* 실시간 통계 카드 */
         .stats-card { background: #fff; border-radius: 20px; padding: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
         .stats-card h3 { font-size: 1.1rem; font-weight: 900; margin: 0 0 20px 0; color: #111; border-left: 5px solid #ed1c24; padding-left: 12px; }
 
-        /* 퍼센트 게이지 스타일 */
         .compliance-item { margin-bottom: 25px; }
         .compliance-label { display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: 800; font-size: 0.95rem; }
         .progress-bg { background: #eee; height: 12px; border-radius: 10px; overflow: hidden; }
         .progress-fill { height: 100%; background: #ed1c24; transition: width 0.5s ease; }
         .progress-fill.safe { background: #22b14c; }
 
-        /* 위험 알림 로그 */
         .log-card { background: #1a1c1e; border-radius: 20px; padding: 25px; color: #fff; flex-grow: 1; min-height: 300px; }
         .log-list { list-style: none; padding: 0; margin: 0; font-size: 0.85rem; }
         .log-item { padding: 10px 0; border-bottom: 1px solid #333; display: flex; gap: 10px; }
@@ -64,7 +57,6 @@
             100% { transform: scale(1); }
         }
 
-        /* 환경 정보 칩 스타일 (영상 위에 띄우기) */
         .env-info-overlay {
             position: absolute;
             bottom: 20px;
@@ -157,7 +149,6 @@
         fetch("{{ url_for('mask.get_mask_stats') }}")
             .then(res => res.json())
             .then(data => {
-                // 1. 기존 통계 업데이트 (total_rate, child_rate 등)
                 document.getElementById('total-percent').innerText = data.total_rate + "%";
                 document.getElementById('total-bar').style.width = data.total_rate + "%";
                 document.getElementById('accum-total').innerText = data.accum_total;
@@ -167,20 +158,17 @@
                 document.getElementById('child-total').innerText = data.accum_child_total;
                 document.getElementById('child-unmasked').innerText = data.accum_child_total - data.accum_child_masked;
 
-                // 2. [추가] 환경 정보 업데이트
                 if (data.dust_label) {
                     document.getElementById('env-dust-label').innerText = data.dust_label;
                 }
 
-                // 3. [추가] 알림 배너 업데이트
                 const alertBanner = document.getElementById('alert-banner');
                 const alertMsg = document.getElementById('alert-msg');
 
-                if (data.alert_msg) { // 메시지가 있으면 일단 보여줍니다.
+                if (data.alert_msg) { 
                     alertBanner.style.display = 'block';
                     alertMsg.innerText = data.alert_msg;
 
-                    // --- 메시지 내용에 따른 배너 색상 자동 변경 ---
                     if (data.alert_msg.includes("🚨") || data.alert_msg.includes("위기") || data.alert_msg.includes("매우나쁨")) {
                         alertBanner.style.background = "#ed1c24"; // 긴급/위험: 빨간색
                     }
@@ -203,7 +191,6 @@
             .catch(err => console.error("Stats fetch error:", err));
     }
 
-    // 1초마다 업데이트 실행
     setInterval(updateStats, 1000);
 
     document.getElementById('btn-back-to-top').addEventListener('click', function() {
