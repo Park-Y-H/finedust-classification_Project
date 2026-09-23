@@ -16,11 +16,9 @@ from services.air_service import (
 bp = Blueprint('main', __name__, url_prefix='/')
 
 def get_all_history(districts):
-    # 1. 오라클 연결
     conn = get_oracle_connection()
     cur = conn.cursor()
 
-    # 2. 마지막 업데이트 시간 확인 (오라클 문법: SYSDATE 활용 가능하지만 파이썬에서 계산)
     cur.execute("SELECT * FROM (SELECT TO_CHAR(LAST_UPDATE, 'YYYY-MM-DD HH24:MI:SS') FROM AIR_HISTORY ORDER BY LAST_UPDATE DESC) WHERE ROWNUM = 1")
     row = cur.fetchone()
 
@@ -49,7 +47,6 @@ def get_all_history(districts):
             pm10_json = json.dumps(result[1])
             curr = all_gu_air.get(gu, {})
 
-            # 오라클 MERGE 문 (Insert or Update를 한 번에)
             sql = """
                 MERGE INTO AIR_HISTORY h
                 USING DUAL ON (h.GU_NAME = :1)
@@ -64,12 +61,10 @@ def get_all_history(districts):
 
         conn.commit()
 
-    # 4. 결과 조립 (오라클에서 읽기)
     new_history = {}
     cur.execute("SELECT GU_NAME, PM25_JSON, PM10_JSON, O3, NO2, SO2, CO FROM AIR_HISTORY")
     rows = cur.fetchall()
     for r in rows:
-        # 오라클 CLOB 데이터는 r[1].read() 등으로 읽어야 할 수 있으나 cx_Oracle 설정에 따라 자동 변환됨
         new_history[r[0]] = {
             'hists': [json.loads(r[1] if isinstance(r[1], str) else r[1].read()),
                       json.loads(r[2] if isinstance(r[2], str) else r[2].read())],
@@ -86,21 +81,15 @@ def get_all_history(districts):
 
 @bp.route('/')
 def index():
-    # 1. 메인 랜딩 페이지 (index.html) 렌더링
-    # 필요하다면 서울 전체 평균 PM10 정도만 가볍게 가져와서 보여줄 수도 있습니다.
     return render_template('index.html')
 
 
 
-# --- [1. 사용자가 접속하는 빠른 대시보드 함수] ---
+
 @bp.route('/dashboard')
 def dashboard():
     conn = None  # conn을 미리 None으로 초기화
     try:
-        # 1. 수동 업데이트 호출 (테스트 기간에는 놔두셔도 되지만, 안정화되면 주석 처리 하세요)
-        # update_dashboard_cache()
-
-        # 2. DB 연결
         conn = get_oracle_connection()
         cur = conn.cursor()
 
@@ -109,11 +98,8 @@ def dashboard():
         row = cur.fetchone()
 
         if row:
-            # LOB 객체 읽기 처리
             raw_json = row[0].read() if hasattr(row[0], 'read') else row[0]
             real_data = json.loads(raw_json)
-
-            # 💡 중요: return 하기 전에 여기서 close를 하지 말고 finally에 맡깁니다.
             return render_template('dashboard.html',
                                    data_sets=json.dumps(real_data, ensure_ascii=False),
                                    history_data=json.dumps(real_data.get('history_data', {}), ensure_ascii=False),
@@ -128,7 +114,6 @@ def dashboard():
         return f"화면 로딩 중 에러 발생: <pre>{traceback.format_exc()}</pre>", 500
 
     finally:
-        # 3. 연결이 존재하고 열려있을 때만 닫기
         if conn:
             try:
                 conn.close()
@@ -137,13 +122,11 @@ def dashboard():
 
 
 def update_dashboard_cache():
-    # 백그라운드 실행 시 current_app을 인식하기 위해 app_context 사용
     with current_app.app_context():
         print("🔄 대시보드 캐시 갱신 시작...")
         districts = ["종로구", "중구", "용산구", "성동구", "광진구", "동대문구", "중랑구", "성북구", "강북구", "도봉구", "노원구", "은평구", "서대문구", "마포구",
                      "양천구", "강서구", "구로구", "금천구", "영등포구", "동작구", "관악구", "서초구", "강남구", "송파구", "강동구"]
 
-        # [체크] Flask 앱 초기화 시 app.model, app.ratio_df 등이 등록되어 있어야 합니다.
         df = getattr(current_app, 'ratio_df', None)
         model = getattr(current_app, 'model', None)
         scaler = getattr(current_app, 'scaler', None)
@@ -153,7 +136,6 @@ def update_dashboard_cache():
             return
 
         try:
-            # API 데이터 수집
             with ThreadPoolExecutor(max_workers=2) as executor:
                 future_temp = executor.submit(get_seoul_temp_hub)
                 future_air = executor.submit(get_seoul_air_quality)
@@ -163,7 +145,6 @@ def update_dashboard_cache():
             all_gu_air = all_gu_air or {}
             all_history, db_temp = get_all_history(districts)
 
-            # 저장용 변수들
             total_risk, pm10_data, pm25_data = {}, {}, {}
             o3_data, no2_data, so2_data, co_data = {}, {}, {}, {}
             cluster_data, history_data, history_data_pm25 = {}, {}, {}
@@ -197,7 +178,7 @@ def update_dashboard_cache():
                     c_pm10 = float(raw_pm10)
                     c_pm25 = float(raw_pm25)
 
-                    # [보정] 과거 데이터가 없으면 현재 수치로 대체
+                    # 과거 데이터가 없으면 현재 수치로 대체
                     pm10_hist = [int(v) if (v is not None) else int(c_pm10) for v in pm10_hist_raw]
                     pm25_hist = [int(v) if (v is not None) else int(c_pm25) for v in pm25_hist_raw]
 
@@ -207,7 +188,6 @@ def update_dashboard_cache():
                     #weighted_input_pm10 = (c_pm10 * 0.7) + (pm10_hist[2] * 0.15) + (pm10_hist[1] * 0.1) + (pm10_hist[0] * 0.05)
                     # weighted_input_pm25 = (c_pm25 * 0.7) + (pm25_hist[2] * 0.15) + (pm25_hist[1] * 0.1) + (pm25_hist[0] * 0.05)
 
-                    # 예측 입력 데이터 생성
                     short_gu = gu.replace("구", "").strip()
                     row_data = df.loc[short_gu] if short_gu in df_indices else df.mean()
                     current_pop = row_data.get('TOTAL_POP', 0)
@@ -223,7 +203,6 @@ def update_dashboard_cache():
                         'HEALTH_RATIO': row_data.get('HEALTH_RATIO', 0)
                     }
 
-                    # 모델 예측
                     input_df = pd.DataFrame([input_dict])[cols]
                     print("--- [디버깅] 모델 입력 데이터 ---")
                     print(input_df.iloc[0])  # 서버 콘솔에서 학습 데이터와 비교해보세요
@@ -261,7 +240,7 @@ def update_dashboard_cache():
                     print(f"🔥 {gu} 개별 처리 중 에러: {e}")
                     total_risk[gu] = -1
 
-            # 최종 데이터 구조화
+            # 최종 데이터
             common_time_str = common_time if common_time else datetime.datetime.now().strftime('%Y%m%d%H%M')
             real_data = {
                 'total': total_risk, 'pm10': pm10_data, 'pm25': pm25_data,
@@ -275,7 +254,7 @@ def update_dashboard_cache():
                 'analysis_data': analysis_full
             }
 
-            # [중요] DB 저장 및 커밋
+            # DB 저장 및 커밋
             conn = get_oracle_connection()
             cur = conn.cursor()
             json_str = json.dumps(real_data, ensure_ascii=False)
@@ -290,7 +269,6 @@ def update_dashboard_cache():
                                 VALUES ('MAIN_DASHBOARD', :json_data, SYSDATE)
                         """
 
-            # [핵심] JSON 데이터가 클 수 있으므로 cx_Oracle.CLOB 타입을 명시적으로 지정합니다.
             cur.setinputsizes(json_data=cx_Oracle.CLOB)
             cur.execute(sql, json_data=json_str)
 
@@ -303,7 +281,7 @@ def update_dashboard_cache():
             print(f"❌ 전체 캐시 업데이트 실패: {traceback.format_exc()}")
 
 
-@bp.route('/comparison')  # URL을 소문자로 맞추는 것이 관례입니다.
+@bp.route('/comparison') 
 def comparison_view():
     districts = [
         "강남구", "강동구", "강북구", "강서구", "관악구", "광진구", "구로구", "금천구",
@@ -317,25 +295,20 @@ def comparison_view():
         conn = get_oracle_connection()
         cur = conn.cursor()
 
-        # 1. 이미 생성된 대시보드 캐시 데이터를 가져옵니다.
-        # 이 데이터 안에는 'analysis_data'라는 이름으로 25개 구의 모든 정보가 구워져 있습니다.
         sql = "SELECT JSON_DATA FROM DISK_DASHBOARD_CACHE WHERE CACHE_KEY = 'MAIN_DASHBOARD'"
         cur.execute(sql)
         row = cur.fetchone()
 
         if row:
-            # LOB 객체 읽기 및 JSON 변환
             raw_json = row[0].read() if hasattr(row[0], 'read') else row[0]
             real_data = json.loads(raw_json)
 
-            # 2. 캐시된 데이터 중 분석/비교용 데이터를 추출
             analysis_data = real_data.get('analysis_data', {})
 
             return render_template('Comparison_View.html',
                                    districts=districts,
                                    analysis_data=json.dumps(analysis_data, ensure_ascii=False))
         else:
-            # 캐시가 없을 경우에만 최소한의 로직으로 빈 값 전송 또는 안내
             return "데이터 준비 중입니다. 잠시 후 새로고침 해주세요.", 202
 
     except Exception as e:
@@ -360,7 +333,6 @@ def analysis():
         conn = get_oracle_connection()
         cur = conn.cursor()
 
-        # 1. dashboard와 동일한 캐시 데이터를 가져옵니다.
         sql = "SELECT JSON_DATA FROM DISK_DASHBOARD_CACHE WHERE CACHE_KEY = 'MAIN_DASHBOARD'"
         cur.execute(sql)
         row = cur.fetchone()
@@ -369,7 +341,6 @@ def analysis():
             raw_json = row[0].read() if hasattr(row[0], 'read') else row[0]
             real_data = json.loads(raw_json)
 
-            # 2. 미리 구워진 analysis_data만 꺼내서 프론트로 보냅니다.
             analysis_data = real_data.get('analysis_data', {})
 
             return render_template('analysis.html',
