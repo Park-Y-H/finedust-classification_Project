@@ -13,10 +13,10 @@
         .info-box { background: #f8f9fb; padding: 20px; border-radius: 15px; margin-bottom: 25px; border: 1px solid #eee; }
         .info-item {
             display: flex;
-            align-items: center; /* 세로 중앙 정렬 */
+            align-items: center; 
             margin-bottom: 15px;
             font-size: 0.95rem;
-            border-bottom: 1px solid #f0f0f0; /* 항목 간 구분선 (선택사항) */
+            border-bottom: 1px solid #f0f0f0;
             padding-bottom: 10px;
         }
 
@@ -25,38 +25,35 @@
         .info-label {
             color: #888;
             font-weight: bold;
-            width: 100px; /* ★ 항목 이름의 너비를 고정 (가장 중요) */
-            flex-shrink: 0; /* 너비가 줄어들지 않도록 고정 */
+            width: 100px; 
+            flex-shrink: 0;
         }
 
         .info-value {
             color: #333;
             font-weight: 800;
-            /* justify-content: space-between을 삭제했으므로 자동으로 라벨 옆에 붙습니다. */
         }
         .form-group { margin-bottom: 20px; }
         .form-label { font-size: 0.75rem; color: #888; font-weight: bold; margin-bottom: 8px; display: block; }
         .form-input { width: 100%; padding: 12px; border: 1px solid #eee; border-radius: 10px; box-sizing: border-box; outline: none; font-size: 0.9rem; }
 
-        /* 비밀번호 변경 영역 숨김 처리 */
         #pwChangeArea { display: none; background: #fff4f4; padding: 15px; border-radius: 12px; border: 1px solid #ffebeb; margin-top: 10px; }
 
         .btn-toggle { width: 100%; padding: 12px; background: #f0f0f0; color: #555; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; margin-bottom: 15px; font-size: 0.85rem; }
         .save-btn { width: 100%; padding: 16px; background: #333; color: #fff; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; margin-top: 20px; font-size: 1rem; }
 
-        /* 확인 버튼 스타일 */
         .btn-verify {
-            height: 45px;          /* input 높이와 통일 */
-            min-width: 60px;       /* 최소 너비 확보 */
+            height: 45px;          
+            min-width: 60px;      
             padding: 0 15px;
-            background: #333;      /* var(--primary) 색상 */
+            background: #333;      
             color: #fff;
             border: none;
             border-radius: 10px;
             font-size: 0.85rem;
             font-weight: bold;
             cursor: pointer;
-            white-space: nowrap;   /* 글자 줄바꿈 방지 */
+            white-space: nowrap;   
             display: flex;
             align-items: center;
             justify-content: center;
@@ -66,11 +63,10 @@
             background: #555;
         }
 
-        /* 인증 완료 후 스타일 */
         .btn-verify:disabled {
-            background: #22b14c;   /* 성공 시 초록색 */
+            background: #22b14c;   
             cursor: default;
-            opacity: 1;            /* 비활성화 시 흐려짐 방지 */
+            opacity: 1;            
         }
     </style>
 </head>
@@ -148,7 +144,6 @@
 <script>
 
     let isCurrentPwVerified = false;
-    // 비밀번호 입력창 토글 함수
     function togglePwArea() {
         const area = document.getElementById('pwChangeArea');
         area.style.display = (area.style.display === 'none' || area.style.display === '') ? 'block' : 'none';
@@ -169,12 +164,12 @@
         .then(data => {
             if(data.success) {
                 isCurrentPwVerified = true;
-                document.getElementById('currentPw').disabled = true; // 입력창 잠금
-                document.getElementById('newPwStep').style.display = 'block'; // 새 비번창 표시
+                document.getElementById('currentPw').disabled = true; 
+                document.getElementById('newPwStep').style.display = 'block'; 
 
-                // 버튼 상태 변경
+
                 verifyBtn.innerText = "인증완료";
-                verifyBtn.disabled = true; // 더 이상 클릭 안되게
+                verifyBtn.disabled = true; 
             } else {
                 alert("비밀번호가 일치하지 않습니다.");
             }
@@ -190,7 +185,6 @@
         const pw = document.getElementById('newPw').value;
         const confirm = document.getElementById('newPwConfirm').value;
 
-        // 비밀번호를 입력하려고 시도 중인데 확인을 안 한 경우
         if((pw || confirm) && !isCurrentPwVerified) {
             alert("현재 비밀번호 확인이 필요합니다.");
             return;
@@ -206,7 +200,7 @@
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 region: region,
-                password: pw // pw가 빈값이면 지역만 업데이트됨
+                password: pw 
             })
         })
         .then(res => res.json())
