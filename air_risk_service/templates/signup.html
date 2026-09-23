@@ -138,7 +138,6 @@
     let isEmailVerified = false;
     let timerInterval;
 
-    // 1. 요소들이 로드된 후 이벤트 리스너 등록 (가장 안전한 방법)
     window.onload = function() {
         const emailId = document.getElementById('emailId');
         const emailDomain = document.getElementById('emailDomain');
@@ -149,19 +148,16 @@
         }
     };
 
-    // 2. 이메일 합치기 함수
     function updateFullEmail() {
         const id = document.getElementById('emailId').value;
         const domain = document.getElementById('emailDomain').value;
         document.getElementById('joinEmail').value = id + "@" + domain;
     }
 
-    // 3. 타이머 함수 (중복 호출 방지 로직 포함)
     function startTimer() {
         let timeLeft = 180;
         const display = document.getElementById('timerDisplay');
 
-        // 기존 타이머 확실히 제거
         if (timerInterval) {
             clearInterval(timerInterval);
         }
@@ -183,9 +179,7 @@
         }, 1000);
     }
 
-    // 4. 인증번호 발송
     function sendAuth() {
-        // 발송 전 최종 합체
         updateFullEmail();
         const email = document.getElementById('joinEmail').value;
 
@@ -215,7 +209,6 @@
         });
     }
 
-    // 5. 인증번호 확인
     function confirmAuth() {
         const email = document.getElementById('joinEmail').value;
         const authNum = document.getElementById('authNum').value;
