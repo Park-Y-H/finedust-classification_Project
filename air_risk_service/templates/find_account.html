@@ -126,11 +126,9 @@
 
 
     window.addEventListener('load', function() {
-        // URL의 파라미터를 읽어옵니다.
         const urlParams = new URLSearchParams(window.location.search);
         const type = urlParams.get('type');
 
-        // 만약 type이 'pw'라면 비밀번호 찾기 탭(tab2)을 체크합니다.
         if (type === 'pw') {
             const pwTab = document.getElementById('tab2');
             if (pwTab) {
@@ -151,7 +149,6 @@
         }
     }
 
-    // 바깥 클릭 시 닫기 기능 추가
     window.onclick = function(event) {
         if (!event.target.matches('.toggle-btn')) {
             const content = document.getElementById('support-content');
@@ -163,7 +160,6 @@
     }
 
 
-// 1. 실제 이메일 전송 함수
     function sendAuth(type) {
         const btn = event.target;
         const emailInput = type === 'id' ? document.getElementById('idFindEmail') : document.getElementById('pwFindEmail');
@@ -183,7 +179,6 @@
             return;
         }
 
-        // 버튼 상태 변경 (발송 시도 시작)
         btn.disabled = true;
         btn.innerText = "조회 중...";
 
@@ -203,11 +198,10 @@
                 alert("인증번호가 이메일로 전송되었습니다.");
                 authSection.style.display = 'block';
                 startTimer(timerDisplay);
-                btn.innerText = "재발송"; // 성공 후 텍스트 변경
+                btn.innerText = "재발송"; 
                 btn.disabled = false;
             } else {
-                // 가입되지 않은 이메일이거나 아이디가 일치하지 않는 경우
-                alert(data.message); // 예: "해당 정보로 가입된 회원이 없습니다."
+                alert(data.message); 
                 btn.disabled = false;
                 btn.innerText = "인증요청";
             }
@@ -220,7 +214,6 @@
         });
     }
 
-    // 타이머 시작 함수
     function startTimer(display) {
         if (activeTimer) clearInterval(activeTimer);
         let time = 180;
@@ -235,12 +228,10 @@
         }, 1000);
     }
 
-    // 2. 실제 아이디 찾기 완료
     function findId() {
         const email = document.getElementById('idFindEmail').value;
         const code = document.getElementById('idAuthNum').value;
 
-        // 인증번호 검증 (이미 만들어두신 verify_code 사용)
         fetch("{{ url_for('auth.verify_code') }}", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -271,7 +262,6 @@
         .catch(err => alert(err.message));
     }
 
-    // 3. 실제 비밀번호 찾기(인증) 완료
     function findPw() {
         const email = document.getElementById('pwFindEmail').value;
         const code = document.getElementById('pwAuthNum').value;
@@ -294,7 +284,6 @@
         });
     }
 
-    // 4. 새 비밀번호 저장
     function resetPw() {
         const userId = document.getElementById('pwFindId').value;
         const newPw = document.getElementById('newPw').value;
