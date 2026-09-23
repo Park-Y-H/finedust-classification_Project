@@ -14,7 +14,6 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        /* --- 환경 정보 칩 스타일 --- */
         .map-overlay-info {
             position: absolute; top: 15px; left: 15px; z-index: 10;
             display: flex; gap: 10px; pointer-events: none;
@@ -26,20 +25,17 @@
         }
         .info-chip span { color: #888; font-weight: 600; }
 
-        /* 왼쪽 패널 */
         .left { width:280px; display:flex; flex-direction:column; gap:15px; }
         .btn-group { display:flex; flex-direction:column; gap:8px; }
         .btn { padding:12px; border:1px solid #eee; border-radius:10px; background:#fff; cursor:pointer; text-align: left; font-size: 0.85rem; transition: 0.2s; color: #333; font-weight: 600; }
         .btn.active { background:#333; color:#fff; border-color: #333; font-weight: 800; }
 
-        /* 3일 농도 막대 그래프 */
-        /* 3일 농도 막대 그래프 영역 수정본 */
         .chart-container {
             display: flex;
             align-items: flex-end;
             justify-content: space-around;
-            height: 100px; /* 전체 높이 고정 */
-            padding-top: 25px; /* 숫자가 표시될 상단 여유 공간 */
+            height: 100px; 
+            padding-top: 25px; 
         }
 
         .bar-group {
@@ -64,7 +60,7 @@
             border-radius: 4px 4px 0 0;
             transition: height 0.5s ease;
             position: relative;
-            max-height: 70px; /* 300이 들어와도 여기서 멈춤! */
+            max-height: 70px; 
         }
 
         .bar-label {
@@ -74,7 +70,6 @@
             font-weight: 600;
         }
 
-        /* [중요] 로그인 박스 및 하단 푸터 (좌측 하단 디자인 복구) */
         #profile-view { display: none; }
         .login-box { display: flex; flex-direction: column; gap: 8px; }
         .login-input { padding: 10px; border: 1px solid #eee; border-radius: 8px; font-size: 0.8rem; outline: none; }
@@ -96,7 +91,6 @@
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
 
-        /* 삭제되었던 좌측 하단 가로 정렬 스타일 복구 */
         .login-footer {
             display: flex !important;
             justify-content: center !important;
@@ -114,28 +108,25 @@
         .wrapper {
             display: flex;
             flex-direction: column;
-            min-height: 100vh; /* 화면 높이 100% 확보 */
+            min-height: 100vh; 
         }
 
-        /* 2. 레이아웃 영역 */
         .layout {
             display: flex;
             gap: 15px;
-            /* 지도가 고정되길 원하시니 flex: 0 0 auto로 설정하거나
-               아래처럼 flex: 1을 주되 푸터에 마진을 줍니다. */
-            padding-bottom: 100px; /* 지도가 끝난 뒤 푸터와의 사이에 여백 생성 */
+            padding-bottom: 100px; 
         }
 
-        /* 3. 푸터 설정 (핵심) */
+
         footer {
-            margin-top: auto !important; /* 위쪽 요소가 작아도 푸터는 무조건 바닥으로! */
+            margin-top: auto !important; 
             padding: 30px 0;
             flex-shrink: 0;
         }
 
-        /* 지역 선택 및 기타 UI */
+
         .my-region-card {
-            background: #f8f9fa; /* 너무 튀지 않는 색상으로 변경 */
+            background: #f8f9fa; 
             border: 1px solid #eee;
             border-radius: 12px;
             padding: 12px;
@@ -145,7 +136,7 @@
         .region-select { width: 100%; padding: 5px; border-radius: 6px; border: 1px solid var(--warning); font-size: 0.85rem; font-weight: 700; color: #333; outline: none; background: #fff; }
         .status-badge { background: var(--warning); color: #fff; padding: 5px 12px; border-radius: 8px; font-weight: 900; font-size: 0.82rem; margin-top: 10px; display: inline-block; }
 
-        /* 중앙 지도 */
+
         .center {
             flex: 1;
             background: #fff;
@@ -155,13 +146,13 @@
             flex-direction: column;
         }
         .map-box {
-            flex: 1;             /* 부모인 .center 높이에 맞춰 꽉 차게 */
+            flex: 1;            
             border-radius: 16px;
             overflow: hidden;
             border: 1px solid #eee;
             position: relative;
             background: #f0f0f0;
-            min-height: 600px;   /* 지도가 보일 최소 높이 */
+            min-height: 600px;   
         }
         #map { width:100% !important; height:100% !important; }
 
@@ -175,7 +166,7 @@
         .h-phone { font-size: 0.8rem; color: #0066ff; font-weight: 700; margin-top: 3px; }
         .area-label { font-size:10px; font-weight:800; color:#333; text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff; pointer-events: none; }
 
-        /* 지도 등급 범주 */
+
         .map-legend {
             position: absolute; bottom: 15px; right: 15px; z-index: 10;
             background: rgba(255, 255, 255, 0.9); padding: 10px 12px; border-radius: 10px;
@@ -185,22 +176,21 @@
         .legend-title { font-size: 0.75rem; font-weight: 800; color: #555; margin-bottom: 4px; text-align: center; }
         .legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; font-weight: 700; color: #222; }
         .color-box { width: 14px; height: 14px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.1); }
-        /* 범례 숫자(범위) 스타일 - 새로 추가하세요! */
         .range-text {
             font-size: 0.7rem;
             color: #888;
             font-weight: 500;
-            margin-left: auto; /* 숫자만 오른쪽으로 쫙 밀어줍니다 */
+            margin-left: auto; 
             padding-left: 10px;
-            display: inline-block; /* 위치 조절을 위해 필요 */
+            display: inline-block; 
         }
 
         .card-title {
-            margin-bottom: 10px !important; /* 지표 선택 글자 아래 여백을 시원하게! */
+            margin-bottom: 10px !important; 
             font-size: 0.85rem;
             font-weight: 800;
             color: #555;
-            display: block; /* 여백이 잘 적용되도록 설정 */
+            display: block;
         }
     </style>
 </head>
@@ -342,7 +332,6 @@ window.onclick = function(event) {
     }
 };
 
-// 2. 지도 및 데이터 초기 설정
 var currentType = 'total';
 var map = new kakao.maps.Map(document.getElementById('map'), {
     center: new kakao.maps.LatLng(37.5665, 126.9780),
@@ -359,12 +348,10 @@ kakao.maps.event.addListener(map, 'dragend', function() {
     }
 });
 
-// Flask 데이터 바인딩 (에러 방지용 기본값 포함)
 var dataSets = {{ data_sets|safe }} || { total: {}, pm10: {}, pm25: {}, clusters: {}, temp: "-", humi: "-" };
 var pastData = {{ history_data|safe }} || {};
 var pastData25 = {{ history_data_pm25|safe }} || {};
 
-// 초기 정보 표시
 document.getElementById('current-temp').innerText = dataSets.temp + "°C";
 document.getElementById('current-humi').innerText = dataSets.humi + "%";
 
@@ -381,7 +368,6 @@ var polygons = [];
 var riskColors = { '-1': '#a0a0a0', 5: '#ff4d4d', 3: '#f06e14', 4: '#ffbb00', 2: '#ffbb00', 1: '#00c73c', 0: '#00c73c' };
 var riskLabels = { '-1': '⚪ 점검 중', 5: '🔴 매우위험', 3: '🟠 위험', 4: '🟡 보통', 2: '🟡 보통', 1: '🟢 안전', 0: '🟢 안전' };
 
-// 3. 지점 선택 및 지표 변경 로직 (기존 함수 유지)
 function getRiskLevelFromValue(val, type) {
     if (!val || val === "-" || val === 0) return -1;
     var standards = { pm10: [30, 80, 150], pm25: [15, 35, 75] };
@@ -392,7 +378,6 @@ function getRiskLevelFromValue(val, type) {
     return 5;
 }
 
-// 4. 지도 GeoJSON 로드 및 초기 구 선택 (수정본)
 fetch('https://raw.githubusercontent.com/southkorea/seoul-maps/master/kostat/2013/json/seoul_municipalities_geo_simple.json')
 .then(res => res.json())
 .then(json => {
@@ -403,7 +388,6 @@ fetch('https://raw.githubusercontent.com/southkorea/seoul-maps/master/kostat/201
         path.forEach(p => { lat += p.getLat(); lng += p.getLng(); });
         var cLat = lat / path.length, cLng = lng / path.length;
 
-        // 초기 생성 시에는 일단 기본 색으로 생성
         var polygon = new kakao.maps.Polygon({
             map: map, path: path, strokeWeight: 1.5, strokeColor: '#fff',
             fillColor: '#a0a0a0', fillOpacity: 0.7
@@ -422,17 +406,15 @@ fetch('https://raw.githubusercontent.com/southkorea/seoul-maps/master/kostat/201
         });
     });
 
-    // --- [중요 수정] 지도가 다 그려진 직후에 URL 파라미터를 체크하여 색상을 입힙니다. ---
+
     const urlParams = new URLSearchParams(window.location.search);
     const type = urlParams.get('type') || 'total'; // 파라미터 없으면 total
     const targetBtn = document.querySelector(`.btn[onclick*="'${type}'"]`);
 
     if (targetBtn) {
-        // 이미 그려진 폴리곤들에 대해 정확한 type의 색상을 입힙니다.
         changeIndicator(targetBtn, type);
     }
 
-    // 기본 지역 선택 (사용자 설정 혹은 중구)
     const defaultArea = "{{ session.get('user_region', '중구') }}";
     const target = polygons.find(p => p.name === defaultArea);
     if (target) {
@@ -440,11 +422,7 @@ fetch('https://raw.githubusercontent.com/southkorea/seoul-maps/master/kostat/201
     }
 });
 
-// 5. 통합된 페이지 로드 핸들러 (중복 제거됨)
-// 페이지 로드 시 실행
-// 페이지 로드 시 통합 실행 핸들러
 window.addEventListener('load', function() {
-    // 1. 로딩 스피너 제거
     const spinner = document.getElementById('loading-spinner');
     if (spinner) {
         spinner.style.opacity = '0';
@@ -454,8 +432,6 @@ window.addEventListener('load', function() {
 
     document.querySelectorAll('.range-text').forEach(r => r.style.display = 'none');
 
-    // [수정] URL 체크는 이제 GeoJSON fetch가 끝나는 시점에 수행하므로 여기서는 제거하거나
-    // 배지 업데이트 정도만 수행합니다.
     const userRegion = "{{ session.get('user_region', '') }}";
     if (userRegion) {
         const level = dataSets['total'][userRegion] || 0;
@@ -468,11 +444,9 @@ window.addEventListener('load', function() {
 });
 function selectArea(name, lat, lng) {
     let cleanName = name.trim();
-    // '구'가 붙어있든 아니든 다 찾아내기 위한 변수들
     let shortName = cleanName.replace(/구$/, '');
     let longName = shortName + "구";
 
-    // --- [중요: 위치 변경] 에러 방지를 위해 analysisMap을 가장 먼저 선언합니다 ---
     const analysisMap = {
         5: {
             lag: "최근 4일 평균 {avg}㎍/㎥",
@@ -513,7 +487,6 @@ function selectArea(name, lat, lng) {
 
     console.log("--- 클릭한 지역: " + cleanName + " ---");
 
-    // 2. 데이터 찾기 (과거 3일 농도)
     let d = pastData[shortName] || pastData[longName] || pastData[cleanName];
     if (!d) {
         let keys = Object.keys(pastData);
@@ -526,7 +499,6 @@ function selectArea(name, lat, lng) {
         d = [0, 0, 0];
     }
 
-    // 3. UI 업데이트 (이름 및 상태 등급 결정)
     document.getElementById('sel-name').innerText = cleanName;
 
     const activeBtn = document.querySelector('.btn.active');
@@ -535,25 +507,21 @@ function selectArea(name, lat, lng) {
     let label = "";
     let lv; // 등급을 담을 변수
 
-    // [핵심 수정]: 현재 버튼 상태에 따라 등급(lv)을 다르게 계산합니다.
     if (btnText.includes("초미세먼지")) {
         let val = dataSets['pm25'][cleanName] || dataSets['pm25'][shortName] || 0;
         displayVal = (val > 0) ? val + "㎍/㎥" : "점검 중";
         label = "PM2.5";
-        // 초미세먼지 수치를 기준으로 등급을 다시 계산 (예: 도봉구 수치가 낮으면 '좋음' 등급 반환)
         lv = getRiskLevelFromValue(val, 'pm25');
     } else if (btnText.includes("미세먼지")) {
         let val = dataSets['pm10'][cleanName] || dataSets['pm10'][shortName] || 0;
         displayVal = (val > 0) ? val + "㎍/㎥" : "점검 중";
         label = "PM10";
-        // 미세먼지 수치를 기준으로 등급 계산
         lv = getRiskLevelFromValue(val, 'pm10');
     } else {
-        // '종합 보건 위험 등급' 버튼이 활성화된 경우 기존 로직 유지
         lv = dataSets['total'][cleanName] || dataSets['total'][shortName] || 0;
     }
 
-    // 등급 텍스트 출력
+
     if (label !== "") {
         document.getElementById('sel-status').innerHTML = `
             ${riskLabels[lv]}
@@ -564,14 +532,13 @@ function selectArea(name, lat, lng) {
     } else {
         document.getElementById('sel-status').innerText = riskLabels[lv];
     }
-    // 등급 색상 적용
+
     document.getElementById('sel-status').style.color = riskColors[lv];
 
     let d10 = pastData[shortName] || pastData[longName] || pastData[cleanName] || [0, 0, 0];
     let d25 = pastData25[shortName] || pastData25[longName] || pastData25[cleanName] || [0, 0, 0];
     const labels = ['3일 전', '2일 전', '어제'];
 
-    // 2. 통합 차트 생성 또는 업데이트
     if (!combinedChart) {
         const ctx = document.getElementById('combinedTrendChart').getContext('2d');
         combinedChart = new Chart(ctx, {
@@ -607,7 +574,7 @@ function selectArea(name, lat, lng) {
                 responsive: true,
                 maintainAspectRatio: false,
                 interaction: {
-                    mode: 'index', // 마우스를 올렸을 때 두 지표를 같이 보여줌
+                    mode: 'index', 
                     intersect: false,
                 },
                 plugins: {
@@ -641,13 +608,11 @@ function selectArea(name, lat, lng) {
             }
         });
     } else {
-        // 기존 차트가 있으면 데이터셋만 업데이트
         combinedChart.data.datasets[0].data = d10;
         combinedChart.data.datasets[1].data = d25;
-        combinedChart.update('none'); // 'none'을 주면 애니메이션 없이 즉시 업데이트되어 빠릿해 보입니다
+        combinedChart.update('none'); 
     }
 
-    // 5. 군집/분석 정보 가져오기 (cId 사용)
     const cId = dataSets['clusters'][cleanName] || dataSets['clusters'][shortName];
 
     if (cId === null || cId === undefined) {
@@ -676,7 +641,6 @@ function selectArea(name, lat, lng) {
     } else {
         const info = analysisMap[cId];
         if (info) {
-            // [핵심] {avg} 글자를 계산된 avgVal로 바꿔서 화면에 출력합니다.
             let lagText = info.lag.replace("{avg}", avgVal);
             document.getElementById('an-lag').innerText = lagText;
 
@@ -688,8 +652,6 @@ function selectArea(name, lat, lng) {
     }
 
 
-    // 6. 미세먼지 관련 병원(호흡기, 이비인후과, 종합병원) 검색
-// 키워드를 "자치구명 + 호흡기" 등으로 검색하면 더 정확합니다.
     const searchKeyword = `${cleanName} 호흡기내과`;
 
     ps.keywordSearch(searchKeyword, function(data, status) {
@@ -697,7 +659,6 @@ function selectArea(name, lat, lng) {
             let html = '';
             // 검색 결과 중 상위 3개만 표시
             for(let j=0; j<Math.min(data.length, 3); j++) {
-                // 병원 이름에 '치과', '성형외과', '피부과' 등이 포함되어 있다면 제외하는 필터링 (선택 사항)
                 if (data[j].category_name.includes('치과') || data[j].category_name.includes('피부과')) continue;
 
                 html += `
@@ -710,7 +671,6 @@ function selectArea(name, lat, lng) {
             }
             document.getElementById('hospital-results').innerHTML = html;
         } else {
-            // 호흡기내과 결과가 없을 경우 '이비인후과'나 '종합병원'으로 재검색 시도 가능
             ps.keywordSearch(`${cleanName} 종합병원`, function(data2, status2) {
                 if (status2 === kakao.maps.services.Status.OK) {
                     let html = '';
@@ -723,7 +683,7 @@ function selectArea(name, lat, lng) {
                 }
             });
         }
-    }, { location: new kakao.maps.LatLng(lat, lng), radius: 5000 }); // 반경을 5km로 넓히면 더 잘 잡힙니다.
+    }, { location: new kakao.maps.LatLng(lat, lng), radius: 5000 }); 
 }
 
 function changeIndicator(btn, type) {
@@ -732,15 +692,13 @@ function changeIndicator(btn, type) {
 
     polygons.forEach(p => {
         let name = p.name;
-        let riskLevel = -1; // 기본값을 점검중으로 설정
+        let riskLevel = -1; 
 
         if (type === 'total') {
-            // [수정] || 0 을 제거하여 백엔드가 준 -1이나 0을 그대로 유지
             let rawLevel = dataSets['total'][name];
             riskLevel = (rawLevel !== undefined && rawLevel !== null) ? rawLevel : -1;
         } else {
             let val = dataSets[type][name];
-            // [수정] 수치 데이터 자체가 0이거나 없을 경우 무조건 점검중(-1) 처리
             if (val === 0 || val === "-" || val === null || val === undefined) {
                 riskLevel = -1;
             } else {
@@ -748,12 +706,10 @@ function changeIndicator(btn, type) {
             }
         }
 
-        // [핵심] 타입을 문자열로 강제 변환하여 riskColors['-1']을 확실히 찾도록 함
         let finalColor = riskColors[String(riskLevel)] || '#a0a0a0';
         p.polygon.setOptions({ fillColor: finalColor });
     });
 
-    // 범례 및 타이틀 업데이트 로직 (기존과 동일)
     const legendTitle = document.querySelector('.legend-title');
     const ranges = document.querySelectorAll('.range-text');
 
@@ -776,7 +732,6 @@ function changeIndicator(btn, type) {
     if(currentSel !== "지역 선택") {
         const target = polygons.find(p => p.name === currentSel);
         if(target) {
-            // selectArea를 호출하면 앞서 수정했던 등급(lv) 계산 로직이 작동하며 리포트가 바뀝니다.
             selectArea(target.name, target.lat, target.lng);
         }
     }
@@ -787,17 +742,14 @@ function changeIndicator(btn, type) {
 function updateMyRegion(regionName) {
     if(!regionName) return;
 
-    // dataSets에서 해당 지역의 등급 가져오기
     const level = dataSets['total'][regionName] || 0;
     const statusLabel = riskLabels[level] || "데이터 없음";
 
     const badge = document.getElementById('my-region-status');
     badge.innerText = regionName + ": " + statusLabel;
 
-    // 등급에 따른 배지 색상 변경 (옵션)
     badge.style.background = riskColors[level];
 
-    // 지도의 해당 지역으로 이동
     const target = polygons.find(p => p.name === regionName);
     if(target) selectArea(target.name, target.lat, target.lng);
 }
