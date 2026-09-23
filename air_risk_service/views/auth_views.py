@@ -38,8 +38,6 @@ def signup_process():
         conn = get_oracle_connection()
         cursor = conn.cursor()
 
-        # [중요] 오라클 USERS 테이블 컬럼명에 맞춰 INSERT 문 작성
-        # 테이블 구조 예시: NAME, USER_ID, EMAIL, PASSWORD, REGION
         sql = "INSERT INTO USERS (NAME, USER_ID, EMAIL, PASSWORD, REGION) VALUES (:1, :2, :3, :4, :5)"
         cursor.execute(sql, [name, user_id, email, hashed_password, region])
 
@@ -71,12 +69,10 @@ def login_process():
         conn = get_oracle_connection()
         cursor = conn.cursor()
 
-        # 아이디와 비번이 맞는지 확인(SELECT)하는 SQL 문입니다.
         sql = "SELECT NAME, REGION, PASSWORD FROM USERS WHERE USER_ID = :1"
         cursor.execute(sql, [user_id])
         user = cursor.fetchone()
 
-        # [수정] 사용자가 존재하고, 해시된 비밀번호가 일치하는지 확인
         if user and check_password_hash(user[2], user_pw):
             session['user_id'] = user_id
             session['user_name'] = user[0]
@@ -95,11 +91,7 @@ def login_process():
 
 @bp.route('/logout')
 def logout():
-    # 세션의 모든 데이터 삭제 (user_id, user_name 등)
     session.clear()
-    # 혹은 특정 데이터만 삭제: session.pop('user_id', None)
-
-    # 팝업을 띄우고 메인으로 보내는 방식
     return "<script>alert('로그아웃 되었습니다.'); location.href='/';</script>"
 
 
@@ -110,7 +102,6 @@ def mypage():
 
     conn = get_oracle_connection()
     cursor = conn.cursor()
-    # 세션 ID를 이용해 사용자 정보 가져오기
     sql = "SELECT NAME, USER_ID, EMAIL, REGION FROM USERS WHERE USER_ID = :1"
     cursor.execute(sql, [session['user_id']])
     user_info = cursor.fetchone()
@@ -133,23 +124,18 @@ def update_profile():
     cursor = conn.cursor()
 
     try:
-        # 1. DB에 저장된 현재 암호화된 비밀번호 가져오기
         cursor.execute("SELECT PASSWORD FROM USERS WHERE USER_ID = :1", [user_id])
         row = cursor.fetchone()
         current_hashed_pw = row[0] if row else None
 
         if new_pw:
-            # 2. [수정] 새 비밀번호가 기존 비밀번호와 같은지 '함수'로 체크
-            # check_password_hash(해시값, 생비밀번호)
             if current_hashed_pw and check_password_hash(current_hashed_pw, new_pw):
                 return jsonify({"success": False, "message": "이전 비밀번호와 동일합니다. 다른 비밀번호를 입력해주세요."})
 
-            # 3. 다를 경우 새 비밀번호를 암호화해서 업데이트
             sql = "UPDATE USERS SET PASSWORD = :1, REGION = :2 WHERE USER_ID = :3"
             hashed_new_pw = generate_password_hash(new_pw)
             cursor.execute(sql, [hashed_new_pw, new_region, user_id])
         else:
-            # 비밀번호 입력이 없으면 지역만 업데이트
             sql = "UPDATE USERS SET REGION = :1 WHERE USER_ID = :2"
             cursor.execute(sql, [new_region, user_id])
 
@@ -165,7 +151,6 @@ def update_profile():
 
 
 
-# 임시 저장용 (실제 서비스에서는 Redis나 DB 권장)
 auth_codes = {}
 
 
@@ -173,25 +158,22 @@ auth_codes = {}
 def send_auth_email():
     data = request.get_json()
     email = data.get('email')
-    find_type = data.get('type')  # 'id' 또는 'pw' (프론트에서 보낸 값)
-    user_id = data.get('user_id')  # 비밀번호 찾기 시에만 들어옴
+    find_type = data.get('type') 
+    user_id = data.get('user_id')  
 
     if not email:
         return jsonify({"success": False, "message": "이메일 주소가 없습니다."})
 
     # --- [수정 구간: DB 존재 여부 체크] ---
-    conn = get_oracle_connection()  # 기존에 사용하시던 DB 연결 함수
+    conn = get_oracle_connection() 
     cursor = conn.cursor()
 
     try:
         if find_type == 'id':
-            # 아이디 찾기: 이메일만 존재하면 됨
             cursor.execute("SELECT COUNT(*) FROM USERS WHERE EMAIL = :1", [email])
         elif find_type == 'pw':
-            # 비밀번호 찾기: 아이디와 이메일이 모두 일치해야 함
             cursor.execute("SELECT COUNT(*) FROM USERS WHERE USER_ID = :1 AND EMAIL = :2", [user_id, email])
         else:
-            # 회원가입 등 일반 발송인 경우 (기존 로직 유지)
             exists = 1
 
         if find_type in ['id', 'pw']:
@@ -204,13 +186,11 @@ def send_auth_email():
         return jsonify({"success": False, "message": f"DB 조회 오류: {str(e)}"})
     finally:
         conn.close()
-    # --- [체크 종료] ---
 
-    # 인증번호 생성 및 발송 (기존과 동일)
+
     code = str(random.randint(100000, 999999))
     auth_codes[email] = code
 
-    # 이메일 발송 함수 분리
     def send_mail_task(to_email, auth_code):
         SMTP_SERVER = "smtp.gmail.com"
         SMTP_PORT = 587
@@ -231,10 +211,9 @@ def send_auth_email():
         except Exception as e:
             print(f"백그라운드 메일 발송 에러: {e}")
 
-    # [중요] 별도의 쓰레드에서 발송 시작 (서버는 기다리지 않고 즉시 응답)
     threading.Thread(target=send_mail_task, args=(email, code), daemon=True).start()
 
-    return jsonify({"success": True})  # 즉시 성공 응답을 보냄
+    return jsonify({"success": True})  
 
 
 @bp.route('/verify_code', methods=['POST'])
@@ -273,7 +252,6 @@ def verify_password():
         conn.close()
 
 
-# [추가] 실제 아이디 찾기 처리
 @bp.route('/find_id_result', methods=['POST'])
 def find_id_result():
     data = request.get_json()
@@ -281,7 +259,6 @@ def find_id_result():
 
     conn = get_oracle_connection()
     cursor = conn.cursor()
-    # 이메일로 가입된 아이디 찾기
     cursor.execute("SELECT USER_ID FROM USERS WHERE EMAIL = :1", [email])
     row = cursor.fetchone()
     conn.close()
@@ -292,7 +269,6 @@ def find_id_result():
         return jsonify({"success": False, "message": "해당 이메일로 가입된 정보가 없습니다."})
 
 
-# [추가] 비밀번호 재설정 (비밀번호 찾기 후속 단계)
 @bp.route('/reset_password_find', methods=['POST'])
 def reset_password_find():
     data = request.get_json()
